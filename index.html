@@ -175,6 +175,14 @@
   .refresh{font-size:16px; line-height:1; background:none; border:none; padding:7px 9px; color:var(--mut); border-radius:var(--r-xs)}
   .refresh:hover{background:var(--raise); color:var(--ink)}
   .hsegrow{display:flex; gap:4px}
+  .fl{display:block; margin:0 0 10px; min-width:0}
+  .fl > .fll{display:block; font-size:12.5px; color:var(--mut); margin:0 0 4px; line-height:1.35}
+  .fl input,.fl select{margin-bottom:0}
+  .fl select + input{margin-top:6px}
+  .frow{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end}
+  .frow > .fl{flex:1 1 150px}
+  .hguide{margin:3px 0 0; padding-left:16px; font-size:12.5px; line-height:1.4; color:var(--mut)}
+  .hlegend{font-size:12.5px; color:var(--mut); margin:2px 0 4px}
   .hseg{width:36px; padding:7px 0; font-size:13px; text-align:center}
   .hseg.on{background:var(--accent-strong); border-color:var(--accent-strong); color:#fff}
   .sched-in{display:flex; gap:6px; margin-top:6px; flex-wrap:wrap}
@@ -427,7 +435,7 @@
   // index.html by build.py, so a design change in the OS reaches the app on the next build.
   // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
   var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
-  var APP_VERSION = '20260924-1938';
+  var APP_VERSION = '20260924-2140';
   var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
   var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
 
@@ -605,6 +613,18 @@
 
   // ---- hygienics (9 areas × 1–5, ridden along with the morning run) ----
   var HYG_AREAS = ['Refrigeration','Shelves & Workstations','Waste & Recycling','Floors','Ceiling & Fans','Furniture & Fixtures','Outside Area','Staff Toilet','Storage Areas'];
+  // What to look at per area — three checks each, shown under the area name (v74).
+  var HYG_GUIDE = [
+    ['Inside clean, no spills or ice build-up', 'Food covered, labelled, dated', 'Cold enough (chiller 5 °C or less), door seals clean'],
+    ['Surfaces wiped, not sticky', 'Tools and boards clean and put away', 'No old food or crumbs'],
+    ['Bins closed, not overflowing', 'Bags changed, no smell', 'Recyclables separated'],
+    ['Swept and mopped, dry', 'Corners and under counters clean', 'No grease or debris'],
+    ['No cobwebs, no dust on fan blades', 'No leaks or stains', 'Lights working'],
+    ['Tables and chairs wiped', 'Nothing broken or wobbly', 'Menus, signs and POS clean'],
+    ['Entrance swept, no litter', 'Signage and plants tidy', 'Outside bins closed'],
+    ['Toilet and sink clean, flush works', 'Soap, tissue, bin with lid', 'Floor dry, no smell'],
+    ['Stock off the floor, oldest used first', 'Everything dated and closed', 'No pests, chemicals away from food']
+  ];
   var HYGDATA = null;
   var HYGS = [];
 
@@ -633,6 +653,34 @@
     var z = $('runzone'); if (!z) return;
     swr({action:'runs_recent'}, function(r){ RUNS = r; if (!RUNOPEN) drawRunZone(); });
     swr({action:'hyg_recent'}, function(r){ HYGDATA = r; if (!RUNOPEN) drawRunZone(); });
+    swr({action:'people_pick'}, function(r){ PEOPLE = (r && r.people) || []; });
+  }
+
+  // People for Endorsed by / Received by — the `staff` roster (HR today, sibol later), names only.
+  var PEOPLE = [];
+  function fld(label, inner){ return '<div class="fl"><span class="fll">'+label+'</span>'+inner+'</div>'; }
+  function personField(id, label, value, st){
+    value = String(value || '');
+    if (!PEOPLE.length) return fld(label, '<input id="'+id+'" value="'+esc(value)+'" placeholder="Name">');
+    var known = {}; PEOPLE.forEach(function(x){ known[x.name] = 1; });
+    var me = (S.role !== 'branch' && S.name) ? S.name : '';
+    if (me) known[me] = 1;
+    var other = value !== '' && !known[value];
+    var opt = function(val, txt){ return '<option value="'+esc(val)+'"'+(val === value ? ' selected' : '')+'>'+esc(txt)+'</option>'; };
+    var mine = PEOPLE.filter(function(x){ return x.store === st; }), rest = PEOPLE.filter(function(x){ return x.store !== st; });
+    var h = '<select id="'+id+'" onchange="personOther(\''+id+'\')"><option value="">— choose —</option>';
+    if (me) h += opt(me, me + ' (me)');
+    if (mine.length) h += '<optgroup label="'+esc((S.stores && S.stores[st]) || st)+'">' + mine.map(function(x){ return opt(x.name, x.name); }).join('') + '</optgroup>';
+    if (rest.length) h += '<optgroup label="Other stores">' + rest.map(function(x){ return opt(x.name, x.name + ' · ' + x.store); }).join('') + '</optgroup>';
+    h += '<option value="__other"'+(other ? ' selected' : '')+'>Someone else — type the name</option></select>'
+      + '<input id="'+id+'-x" value="'+(other ? esc(value) : '')+'" placeholder="Name" style="'+(other ? '' : 'display:none')+'">';
+    return fld(label, h);
+  }
+  function personOther(id){ var sel = $(id), x = $(id+'-x'); if (sel && x){ x.style.display = sel.value === '__other' ? '' : 'none'; if (sel.value === '__other') x.focus(); } }
+  function personVal(id){
+    var e = $(id); if (!e) return '';
+    if (e.tagName === 'SELECT' && e.value === '__other'){ var x = $(id+'-x'); return x ? x.value.trim() : ''; }
+    return e.value.trim();
   }
 
   // Which store the run card is about: the tablet's own store, or the one picked on the walk.
@@ -696,31 +744,40 @@
         + '<button class="primary" onclick="openRunForm()">Fill this morning\'s run</button>';
     } else {
       var v = function(f){ return t ? esc(t[f]) : ''; };
+      var now = new Date(), nowHM = ('0'+now.getHours()).slice(-2) + ':' + ('0'+now.getMinutes()).slice(-2);
+      var birOpts = '';
+      ['No sale','1 sale','2 sales','3 sales','4 sales','5 sales','Not checked'].forEach(function(o){
+        birOpts += '<option'+(t && t.bir_first5===o ? ' selected' : '')+'>'+o+'</option>';
+      });
       h += '<div class="err" id="mr-err"></div>'
         + (office ? '<input type="hidden" id="mr-store" value="'+esc(st)+'">' : '')
-        + '<label style="font-size:13px;color:var(--mut)">Cash fund counted (standard ₱ '+FUND_STD.toLocaleString()+')</label>'
-        + '<input type="number" inputmode="decimal" id="mr-fund" oninput="fundLive()" value="'+(t?t.fund:'')+'" placeholder="₱">'
+        + fld('Cash fund counted — the standard is ₱ '+FUND_STD.toLocaleString(), '<input type="number" inputmode="decimal" id="mr-fund" oninput="fundLive()" value="'+(t?t.fund:'')+'" placeholder="₱">')
         + '<div id="mr-fund-line"></div>'
-        + '<div style="display:flex;gap:8px"><input id="mr-endorsed" value="'+v('endorsed_by')+'" placeholder="Endorsed by" style="flex:1">'
-        + '<input id="mr-received" value="'+v('received_by')+'" placeholder="Received by" style="flex:1"></div>'
-        + '<input id="mr-counts" value="'+v('quick_counts')+'" placeholder="Quick counts — e.g. water 36 · coffee cups 32 · shake cups 138">'
-        + '<div style="display:flex;gap:8px"><input id="mr-booklet" value="'+v('booklet_no')+'" placeholder="OR booklet no." style="flex:1">'
-        + '<select id="mr-bir" style="flex:1">';
-      ['No sale','1 sale','2 sales','3 sales','4 sales','5 sales','Not checked'].forEach(function(o){
-        h += '<option'+(t && t.bir_first5===o ? ' selected' : '')+'>'+o+'</option>';
-      });
-      h += '</select><input type="time" id="mr-btime" value="'+v('bir_time')+'" style="flex:1"></div>'
-        + '<label style="font-size:13px;color:var(--mut);display:block;margin:6px 0 4px">Columnar book — total sales written in it, and the date of the last page</label>'
-        + '<div style="display:flex;gap:8px"><input type="number" inputmode="decimal" id="mr-colsales" value="'+v('columnar_sales')+'" placeholder="Total sales in columnar ₱" style="flex:1">'
-        + '<input type="date" id="mr-coldate" value="'+v('columnar_date')+'" style="flex:1"></div>'
-        + '<label style="font-size:13px;color:var(--mut);display:block;margin:6px 0 4px">Hygienics audit — tap a score per area (1 very poor … 5 excellent). All 9 or none.</label>';
+        + '<div class="frow">'
+        +   personField('mr-endorsed', 'Endorsed by — hands over the fund', t ? t.endorsed_by : '', st)
+        +   personField('mr-received', 'Received by — takes over the fund', t ? t.received_by : '', st)
+        + '</div>'
+        + fld('Quick counts — as on the paper sheet', '<input id="mr-counts" value="'+v('quick_counts')+'" placeholder="e.g. water 36 · coffee cups 32 · shake cups 138">')
+        + '<div class="frow">'
+        +   fld('OR booklet no.', '<input id="mr-booklet" value="'+v('booklet_no')+'" placeholder="e.g. 12">')
+        +   fld('First 5 sales invoices (BIR) — how many so far', '<select id="mr-bir">'+birOpts+'</select>')
+        +   fld('Time checked — when you looked at the invoices', '<input type="time" id="mr-btime" value="'+(t ? v('bir_time') : nowHM)+'">')
+        + '</div>'
+        + '<div class="frow">'
+        +   fld('Total sales in the columnar book (₱)', '<input type="number" inputmode="decimal" id="mr-colsales" value="'+v('columnar_sales')+'" placeholder="₱">')
+        +   fld('Columnar book date — the date of the last entry', '<input type="date" id="mr-coldate" value="'+v('columnar_date')+'">')
+        + '</div>'
+        + '<div class="fl" style="margin:8px 0 2px"><span class="fll"><b style="color:var(--ink)">Hygienics audit</b> — tap one score per area. All 9 or none.</span>'
+        + '<div class="hlegend">5 spotless · 4 small issues · 3 needs cleaning · 2 dirty · 1 health risk</div></div>';
       HYG_AREAS.forEach(function(area, i){
-        h += '<div class="row" style="padding:6px 0;align-items:center"><div><b style="font-weight:500;font-size:13.5px">'+esc(area)+'</b></div><div class="hsegrow">';
+        h += '<div class="row" style="padding:8px 0;align-items:center"><div style="min-width:0"><b style="font-weight:600;font-size:13.5px">'+esc(area)+'</b>'
+          + (HYG_GUIDE[i] ? '<ul class="hguide">'+HYG_GUIDE[i].map(function(g){ return '<li>'+esc(g)+'</li>'; }).join('')+'</ul>' : '')
+          + '</div><div class="hsegrow">';
         for (var s = 1; s <= 5; s++) h += '<button class="hseg" id="hg-'+i+'-'+s+'" onclick="hygSet('+i+','+s+')">'+s+'</button>';
         h += '</div></div>';
       });
       h += '<div id="hyg-line" class="sub" style="margin:4px 0 10px"></div>'
-        + '<input id="mr-note" value="'+v('note')+'" placeholder="Note (optional)">'
+        + fld('Note (optional)', '<input id="mr-note" value="'+v('note')+'" placeholder="Anything the office should know">')
         + '<button class="primary" id="mr-send" onclick="runSubmit()">'+(t?'Update':'Send')+' the morning run</button>'
         + (office ? ' <button class="small" onclick="runCancel()">Cancel</button>' : '');
     }
@@ -771,7 +828,7 @@
       return;
     }
     var btn = $('mr-send'); if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
-    var p = {action:'run_submit', fund:fund, endorsed_by:$('mr-endorsed').value.trim(), received_by:$('mr-received').value.trim(),
+    var p = {action:'run_submit', fund:fund, endorsed_by:personVal('mr-endorsed'), received_by:personVal('mr-received'),
              quick_counts:$('mr-counts').value.trim(), booklet_no:$('mr-booklet').value.trim(),
              bir_first5:$('mr-bir').value, bir_time:$('mr-btime').value,
              columnar_sales:$('mr-colsales').value.trim(), columnar_date:$('mr-coldate').value, note:$('mr-note').value.trim()};
@@ -779,7 +836,7 @@
     var finish = function(){ RUNOPEN = false; bust('runs_recent'); bust('hyg_recent'); renderRunZone(); };
     call(p, function(){
       if (scored === HYG_AREAS.length){
-        var hp = {action:'hyg_submit', scores: HYGS, auditor: S.role === 'branch' ? $('mr-endorsed').value.trim() : (S.name || S.user)};
+        var hp = {action:'hyg_submit', scores: HYGS, auditor: S.role === 'branch' ? personVal('mr-endorsed') : (S.name || S.user)};
         if (S.role !== 'branch' && $('mr-store')) hp.store = $('mr-store').value;
         call(hp, finish, 'mr-err');
       } else {
