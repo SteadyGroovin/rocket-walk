@@ -181,7 +181,8 @@
   .fl > .fll{display:block; font-size:14px; color:var(--ink2); margin:0 0 4px; line-height:1.35}
   .fl input,.fl select{margin-bottom:0}
   .fl select + input{margin-top:6px}
-  .frow{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end}
+  .frow{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start}
+  .fhint{display:block; font-size:13px; color:var(--ink2); margin:4px 0 0; line-height:1.35}
   .frow > .fl{flex:1 1 150px}
   .hguide{margin:3px 0 0; padding-left:18px; font-size:14px; line-height:1.45; color:var(--ink2)}
   .hlegend{font-size:13.5px; color:var(--ink2); margin:2px 0 4px}
@@ -455,7 +456,7 @@
   // index.html by build.py, so a design change in the OS reaches the app on the next build.
   // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
   var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
-  var APP_VERSION = '20260924-2251';
+  var APP_VERSION = '20260924-2256';
   var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
   var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
 
@@ -539,7 +540,7 @@
       RUNS.runs = RUNS.runs.filter(function(r){ return !(r.day === today && r.store === p.store); });
       RUNS.runs.unshift({ id:'queued', day:today, store:p.store, fund:p.fund, endorsed_by:p.endorsed_by, received_by:p.received_by,
         quick_counts:p.quick_counts, booklet_no:p.booklet_no, bir_first5:p.bir_first5, bir_time:p.bir_time,
-        columnar_sales:p.columnar_sales, columnar_date:p.columnar_date, note:p.note, recorded_by:S.user + ' · waiting to send' });
+        columnar_sales:p.columnar_sales, columnar_date:p.columnar_date, note:p.note, recorded_by:S.user, recorded_name:(S.name || S.user) + ' · waiting to send' });
       try { localStorage.setItem('c_' + S.user + '_runs_recent_', JSON.stringify(RUNS)); } catch(e){}
     }
     if (p.action === 'hyg_submit' && HYGDATA){
@@ -679,10 +680,11 @@
 
   // People for Endorsed by / Received by — the `staff` roster (HR today, sibol later), names only.
   var PEOPLE = [];
-  function fld(label, inner){ return '<div class="fl"><span class="fll">'+label+'</span>'+inner+'</div>'; }
-  function personField(id, label, value, st){
+  function fld(label, inner, hint){ return '<div class="fl"><span class="fll">'+label+'</span>'+inner+(hint ? '<span class="fhint">'+hint+'</span>' : '')+'</div>'; }
+  function byName(t){ return (t && (t.recorded_name || t.recorded_by)) || ''; }
+  function personField(id, label, value, st, hint){
     value = String(value || '');
-    if (!PEOPLE.length) return fld(label, '<input id="'+id+'" value="'+esc(value)+'" placeholder="Name">');
+    if (!PEOPLE.length) return fld(label, '<input id="'+id+'" value="'+esc(value)+'" placeholder="Name">', hint);
     var known = {}; PEOPLE.forEach(function(x){ known[x.name] = 1; });
     var me = (S.role !== 'branch' && S.name) ? S.name : '';
     if (me) known[me] = 1;
@@ -695,7 +697,7 @@
     if (rest.length) h += '<optgroup label="Other stores">' + rest.map(function(x){ return opt(x.name, x.name + ' · ' + x.store); }).join('') + '</optgroup>';
     h += '<option value="__other"'+(other ? ' selected' : '')+'>Someone else — type the name</option></select>'
       + '<input id="'+id+'-x" value="'+(other ? esc(value) : '')+'" placeholder="Name" style="'+(other ? '' : 'display:none')+'">';
-    return fld(label, h);
+    return fld(label, h, hint);
   }
   function personOther(id){ var sel = $(id), x = $(id+'-x'); if (sel && x){ x.style.display = sel.value === '__other' ? '' : 'none'; if (sel.value === '__other') x.focus(); } }
   function personVal(id){
@@ -754,13 +756,13 @@
     var next = null;
     if (JUST_SENT){ var at = WALK_STORES.indexOf(JUST_SENT);
       for (var k = 1; k <= WALK_STORES.length && !next; k++){ var c = WALK_STORES[(at + k) % WALK_STORES.length]; if (!runToday(c)) next = c; } }
-    var h = '<div class="card"><h2>Store walk — today</h2>'
+    var h = '<div class="card"><h2>Today — '+done+' of '+WALK_STORES.length+' done</h2>'
       + (JUST_SENT ? '<p class="sub"><span class="sentline">✓ '+esc(S.stores[JUST_SENT]||JUST_SENT)+' sent</span>'+(next ? ' · next: <b>'+esc(S.stores[next]||next)+'</b>' : ' · all '+WALK_STORES.length+' stores done')+'</p>' : '')
-      + '<p class="sub">'+esc(fmtD(RUNS.today))+' · '+done+' of '+WALK_STORES.length+' stores done · tap a store to fill its morning run</p>';
+      + '<p class="sub">'+esc(fmtD(RUNS.today))+' · tap a store to fill its morning run</p>';
     WALK_STORES.forEach(function(st){
       var t = runToday(st), hy = hygTodayFor(st);
       h += '<div class="row'+(st === next ? ' nextup' : '')+'" style="cursor:pointer" onclick="walkPick(\''+st+'\')"><div><b><span class="dot" style="--c:'+(BRAND[st]||'var(--s-none)')+'"></span>'+esc(S.stores[st]||st)+'</b>'
-        + '<div class="meta">'+(t ? 'sent by '+esc(t.recorded_by)+' · '+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—') : 'not yet')+(hy ? ' · '+hygWeakest(hy) : '')+'</div></div>'
+        + '<div class="meta">'+(t ? 'sent by '+esc(byName(t))+' · '+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—') : 'not yet')+(hy ? ' · '+hygWeakest(hy) : '')+'</div></div>'
         + '<div>'+(t ? fundChip(t.fund) : '<span class="chip c-sched">not yet</span>')+(hy ? ' '+hygChip(hy) : '')
         + ' <button class="small" onclick="event.stopPropagation();walkPick(\''+st+'\')">'+(t ? 'Open' : 'Fill')+'</button></div></div>';
     });
@@ -777,7 +779,7 @@
     var t = runToday(st), office = S.role !== 'branch';
     var h = '<div class="card accent" id="runcard"><h2>Morning run'+(office ? ' — '+esc(S.stores[st]||st) : '')+'</h2>';
     if (!RUNOPEN && t){
-      h += '<p class="sub">sent for today by '+esc(t.recorded_by)+'</p>'
+      h += '<p class="sub">sent for today by '+esc(byName(t))+'</p>'
         + '<div class="row" style="padding:6px 0"><div><b>Cash fund</b><div class="meta">'+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—')+'</div></div><div>'+fundChip(t.fund)+'</div></div>'
         + '<div class="row" style="padding:6px 0"><div><b>BIR first 5 sales</b><div class="meta">booklet '+esc(t.booklet_no||'—')+(t.quick_counts?' · '+esc(t.quick_counts):'')+'</div></div><div><span class="chip c-done">'+esc(t.bir_first5||'checked')+(t.bir_time?' · '+esc(t.bir_time):'')+'</span></div></div>';
       if (t.columnar_sales !== '' && t.columnar_sales != null)
@@ -804,22 +806,22 @@
       });
       h += (office ? '<input type="hidden" id="mr-store" value="'+esc(st)+'">' : '')
         + '<div class="fsec first">Cash fund</div>'
-        + fld('Cash fund counted — the standard is ₱ '+FUND_STD.toLocaleString(), '<input type="number" inputmode="decimal" id="mr-fund" oninput="fundLive()" value="'+(t?t.fund:'')+'" placeholder="₱">')
+        + fld('Cash fund counted', '<input type="number" inputmode="decimal" id="mr-fund" oninput="fundLive()" value="'+(t?t.fund:'')+'" placeholder="₱">', 'The standard is ₱ '+FUND_STD.toLocaleString())
         + '<div id="mr-fund-line"></div>'
         + '<div class="frow">'
-        +   personField('mr-endorsed', 'Endorsed by — hands over the fund', t ? t.endorsed_by : '', st)
-        +   personField('mr-received', 'Received by — takes over the fund', t ? t.received_by : '', st)
+        +   personField('mr-endorsed', 'Endorsed by', t ? t.endorsed_by : '', st, 'Hands over the fund')
+        +   personField('mr-received', 'Received by', t ? t.received_by : '', st, 'Takes over the fund')
         + '</div>'
         + quickCountsHtml(st, t)
         + '<div class="fsec">BIR & columnar book</div>'
         + '<div class="frow">'
         +   fld('OR booklet no.', '<input id="mr-booklet" value="'+v('booklet_no')+'" placeholder="e.g. 12">')
-        +   fld('First 5 sales invoices (BIR) — how many so far', '<select id="mr-bir">'+birOpts+'</select>')
-        +   fld('Time checked — when you looked at the invoices', '<input type="time" id="mr-btime" value="'+(t ? v('bir_time') : nowHM)+'">')
+        +   fld('First 5 sales (BIR)', '<select id="mr-bir">'+birOpts+'</select>', 'How many invoiced so far')
+        +   fld('Time checked', '<input type="time" id="mr-btime" value="'+(t ? v('bir_time') : nowHM)+'">', 'When you looked at the invoices')
         + '</div>'
         + '<div class="frow">'
-        +   fld('Total sales in the columnar book (₱)', '<input type="number" inputmode="decimal" id="mr-colsales" value="'+v('columnar_sales')+'" placeholder="₱">')
-        +   fld('Columnar book date — the date of the last entry', '<input type="date" id="mr-coldate" value="'+v('columnar_date')+'">')
+        +   fld('Columnar book sales (₱)', '<input type="number" inputmode="decimal" id="mr-colsales" value="'+v('columnar_sales')+'" placeholder="₱">')
+        +   fld('Columnar book date', '<input type="date" id="mr-coldate" value="'+v('columnar_date')+'">', 'The date of the last entry')
         + '</div>'
         + '<div class="fsec">Hygienics audit</div><div class="fl" style="margin:0 0 2px"><span class="fll">Tap one score per area. All 9 or none.</span>'
         + '<div class="hlegend">5 spotless · 4 small issues · 3 needs cleaning · 2 dirty · 1 health risk</div></div>';
@@ -911,7 +913,7 @@
     var finish = function(){
       RUNOPEN = false;
       if (RUNS && sentStore && !runToday(sentStore))   // show it as sent at once; the refresh below replaces it
-        RUNS.runs.unshift({ day: RUNS.today, store: sentStore, fund: p.fund, endorsed_by: p.endorsed_by, received_by: p.received_by, recorded_by: S.name || S.user });
+        RUNS.runs.unshift({ day: RUNS.today, store: sentStore, fund: p.fund, endorsed_by: p.endorsed_by, received_by: p.received_by, recorded_by: S.user, recorded_name: S.name || S.user });
       if (S.role !== 'branch'){ JUST_SENT = sentStore; WALK_STORE = null; }
       bust('runs_recent'); bust('hyg_recent');
       drawRunZone();
