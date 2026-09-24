@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Store walk</title>
+<meta name="description" content="Rocket OS — the morning round: cash fund, quick counts, BIR check, columnar book and hygienics, store by store.">
+<meta name="theme-color" content="#0E3B29">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Store walk">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Rocket OS — design system v2 (2026-09-05)
+     Same class names as v1, re-tokenised: light + dark, one
+     categorical store palette (validated), hairline surfaces,
+     tighter radii, visible focus, calmer charts.
+     ============================================================ */
+  :root{
+    color-scheme:light;
+
+    /* --- surfaces & ink (light) --- */
+    --shell:#F1F4F2; --card:#FFFFFF; --raise:#F8FAF9;
+    --ink:#121A16; --ink2:#3C4A43; --mut:#65756C;
+    --line:#DCE4DF; --line2:#E9EEEB;
+
+    /* --- brand --- */
+    --hero:#0E3B29; --hero1:#175C41; --hero2:#082018; --heroink:#EEF5F0;
+    --accent:var(--ink);
+    --accent-strong:var(--accent);   /* fallback */
+
+    /* --- status --- */
+    --good:#0F7E52; --good-bg:#E3F2EA;
+    --warn:#9A6600; --warn-bg:#F8EEDA;
+    --crit:#B3261E; --crit-bg:#FBE9E7;
+    --info-bg:#EDF1EF;
+
+    /* --- store palette (categorical, validated light+dark) ---
+       order MCC·DC·MCBC·P99·BK·VAL·SP = red·violet·magenta·blue·orange·aqua·yellow */
+    --s-mcc:#E34948; --s-dc:#4A3AA7; --s-mcbc:#E87BA4; --s-p99:#2A78D6;
+    --s-bk:#EB6834;  --s-val:#1BAF7A; --s-sp:#EDA100;  --s-dh:#0E7C86; --s-none:#8A968F;
+    /* legacy aliases — older markup still resolves */
+    --mc:var(--s-mcc); --p99:var(--s-p99); --bk:var(--s-bk); --val:var(--s-val); --sp:var(--s-sp);
+
+    /* --- chart --- */
+    --bar:#1D6B4B; --bar-hi:#0E3B29; --bar-zero:#DFE7E2; --bar-future:#CBD6D0;
+    --track:#E7EDE9; --grid:#E9EEEB;
+
+    /* --- shape & depth --- */
+    --r:14px; --r-sm:10px; --r-xs:8px; --r-pill:999px;
+    --sh:0 1px 2px rgba(16,32,25,.05);
+    --sh-lift:0 1px 2px rgba(16,32,25,.05), 0 12px 28px -18px rgba(16,32,25,.35);
+    --sh-hero:0 20px 40px -28px rgba(8,32,24,.65);
+    --ring:0 0 0 3px rgba(23,92,65,.28);
+
+    --fdisp:"Bricolage Grotesque",system-ui,sans-serif;
+    --ftext:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  }
+
+  /* --- dark: OS preference, unless the user stamped light --- */
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --shell:#0D1311; --card:#161E1A; --raise:#1B2420;
+      --ink:#E9F0EB; --ink2:#B9C6BE; --mut:#8FA096;
+      --line:#26332C; --line2:#1F2A25;
+      --hero:#10402C; --hero1:#1A6949; --hero2:#07130E; --heroink:#EAF3ED;
+      --good:#4CC38A; --good-bg:#12301F;
+      --warn:#E0A73C; --warn-bg:#33260B;
+      --crit:#F27167; --crit-bg:#3A1512;
+      --info-bg:#1D2723;
+      --s-mcc:#E66767; --s-dc:#9085E9; --s-mcbc:#D55181; --s-p99:#3987E5;
+      --s-bk:#D95926;  --s-val:#199E70; --s-sp:#C98500;  --s-dh:#35AEB8; --s-none:#7C8B83;
+      --bar:#2E8A62; --bar-hi:#4CC38A; --bar-zero:#25302A; --bar-future:#314038;
+      --track:#212C27; --grid:#232E29;
+      --sh:0 1px 2px rgba(0,0,0,.5);
+      --sh-lift:0 1px 2px rgba(0,0,0,.5), 0 14px 30px -20px rgba(0,0,0,.8);
+      --sh-hero:0 20px 44px -30px rgba(0,0,0,.9);
+      --ring:0 0 0 3px rgba(76,195,138,.35);
+    }
+  }
+  /* --- dark: explicit toggle wins in both directions --- */
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --shell:#0D1311; --card:#161E1A; --raise:#1B2420;
+    --ink:#E9F0EB; --ink2:#B9C6BE; --mut:#8FA096;
+    --line:#26332C; --line2:#1F2A25;
+    --hero:#10402C; --hero1:#1A6949; --hero2:#07130E; --heroink:#EAF3ED;
+    --good:#4CC38A; --good-bg:#12301F;
+    --warn:#E0A73C; --warn-bg:#33260B;
+    --crit:#F27167; --crit-bg:#3A1512;
+    --info-bg:#1D2723;
+    --s-mcc:#E66767; --s-dc:#9085E9; --s-mcbc:#D55181; --s-p99:#3987E5;
+    --s-bk:#D95926;  --s-val:#199E70; --s-sp:#C98500;  --s-none:#7C8B83;
+    --bar:#2E8A62; --bar-hi:#4CC38A; --bar-zero:#25302A; --bar-future:#314038;
+    --track:#212C27; --grid:#232E29;
+    --sh:0 1px 2px rgba(0,0,0,.5);
+    --sh-lift:0 1px 2px rgba(0,0,0,.5), 0 14px 30px -20px rgba(0,0,0,.8);
+    --sh-hero:0 20px 44px -30px rgba(0,0,0,.9);
+    --ring:0 0 0 3px rgba(76,195,138,.35);
+  }
+
+  /* A store's brand hue is used raw for dots, bars and rules, but a filled
+     button carries white text — deepen it so the label clears 4.5:1. */
+  @supports (color:color-mix(in oklab,red,blue)){
+    :root{ --accent-strong:color-mix(in oklab, var(--accent) 74%, #06100B); }
+  }
+
+  *{box-sizing:border-box; margin:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--shell); color:var(--ink);
+    font:15px/1.5 var(--ftext); padding:10px 16px 40px; max-width:840px; margin:0 auto; min-height:100vh;
+    -webkit-font-smoothing:antialiased}
+  body::before{content:""; position:fixed; inset:0 0 auto 0; height:340px; z-index:-1; pointer-events:none;
+    background:radial-gradient(760px 300px at 50% -150px, color-mix(in srgb, var(--hero) 14%, transparent) 0%, transparent 72%)}
+
+  h1{font-family:var(--fdisp); font-weight:700; font-size:21px; letter-spacing:-.015em; line-height:1.2}
+  h2{font-family:var(--fdisp); font-weight:600; font-size:15.5px; letter-spacing:-.01em; margin-bottom:8px}
+  .sub{color:var(--mut); font-size:13px; margin-bottom:14px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+
+  /* ---------- surfaces ---------- */
+  .card{background:var(--card); border:1px solid var(--line2); border-radius:var(--r);
+    padding:16px 16px 14px; margin-bottom:12px; box-shadow:var(--sh); animation:in .2s ease both}
+  .accent{border-top:3px solid var(--accent); border-top-left-radius:var(--r); border-top-right-radius:var(--r)}
+  .note{font-size:12.5px; color:var(--ink2); background:var(--info-bg); border:1px solid var(--line2);
+    border-left:3px solid var(--mut); border-radius:var(--r-xs); padding:9px 12px; margin:0 0 12px}
+
+  .hero,.cockpit{background:linear-gradient(140deg,var(--hero1) 0%,var(--hero) 46%,var(--hero2) 100%);
+    color:var(--heroink); border:none; position:relative; overflow:hidden; border-radius:var(--r);
+    box-shadow:var(--sh-hero); animation:in .2s ease both}
+  .hero{padding:18px 18px 16px; margin-bottom:12px}
+  .cockpit{padding:18px 20px 16px; margin-bottom:12px}
+  .hero::before,.cockpit::before{content:""; position:absolute; top:-70%; right:-22%; width:72%; height:220%;
+    background:radial-gradient(closest-side, rgba(255,255,255,.15), rgba(255,255,255,0)); pointer-events:none}
+  .hero > *,.cockpit > *{position:relative}
+  .hl,.ck .hl{font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; opacity:.7}
+  .hv{font-family:var(--fdisp); font-weight:700; font-size:38px; letter-spacing:-.03em; line-height:1.05; margin:6px 0 6px}
+  .hd{font-size:12.5px; opacity:.75; line-height:1.45}
+  .ck{display:grid; grid-template-columns:1.1fr 1fr; gap:24px; align-items:end}
+  @media (max-width:640px){.ck{grid-template-columns:1fr; gap:18px}}
+  .ck .hv{font-size:44px; margin:6px 0 5px}
+  .ck .hv.hv2{font-size:28px; margin-bottom:4px}
+  .spark{display:block; width:100%; height:44px; margin-top:10px}
+  .spark .a{fill:rgba(255,255,255,.14)}
+  .spark .l{fill:none; stroke:#fff; stroke-width:2; stroke-linejoin:round; stroke-linecap:round}
+  .minus{color:#F5B8B2} .plus{color:#9CD9BE}
+
+  /* ---------- controls ---------- */
+  input,textarea,select{width:100%; font:inherit; color:var(--ink); padding:10px 12px;
+    border:1px solid var(--line); border-radius:var(--r-sm); background:var(--raise); margin-bottom:10px}
+  input::placeholder,textarea::placeholder{color:var(--mut)}
+  input:focus,textarea:focus,select:focus{outline:none; border-color:var(--hero1); box-shadow:var(--ring)}
+  input[type=file]{padding:8px; font-size:13px}
+  button{font:inherit; font-weight:600; padding:10px 15px; border:1px solid var(--line);
+    border-radius:var(--r-sm); background:var(--card); color:var(--ink); cursor:pointer;
+    transition:transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease}
+  button:hover{border-color:var(--line)}
+  button:active{transform:scale(.99)}
+  :focus-visible{outline:none; box-shadow:var(--ring)}
+  button.primary{background:var(--accent-strong); border-color:var(--accent-strong); color:#fff; width:100%;
+    box-shadow:0 8px 18px -12px rgba(16,32,25,.7)}
+  button.primary:hover{filter:brightness(1.08)}
+  button.small,button.btn{padding:6px 11px; font-size:13px; width:auto; border-radius:var(--r-xs)}
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .actions button{width:auto}
+  .logout{font-size:12.5px; color:var(--mut); background:none; border:none; padding:4px 6px;
+    text-decoration:underline; text-underline-offset:3px}
+  .refresh{font-size:16px; line-height:1; background:none; border:none; padding:7px 9px; color:var(--mut); border-radius:var(--r-xs)}
+  .refresh:hover{background:var(--raise); color:var(--ink)}
+  .hsegrow{display:flex; gap:4px}
+  .hseg{width:36px; padding:7px 0; font-size:13px; text-align:center}
+  .hseg.on{background:var(--accent-strong); border-color:var(--accent-strong); color:#fff}
+  .sched-in{display:flex; gap:6px; margin-top:6px; flex-wrap:wrap}
+  .sched-in input{margin:0; padding:6px 8px; width:auto; font-size:13px}
+  .err{color:var(--crit); font-size:13px; margin-bottom:10px; min-height:16px}
+  .spin{color:var(--mut); font-size:13px; padding:8px 0}
+  .hide{display:none}
+
+  /* ---------- chrome ---------- */
+  .topbar{position:sticky; top:0; z-index:5; display:flex; justify-content:space-between; align-items:center;
+    gap:10px; margin:0 -16px 10px; padding:9px 16px;
+    background:color-mix(in srgb, var(--shell) 84%, transparent);
+    -webkit-backdrop-filter:saturate(1.4) blur(14px); backdrop-filter:saturate(1.4) blur(14px);
+    border-bottom:1px solid transparent}
+  .topbar.stuck{border-bottom-color:var(--line2)}
+  .tb-l{display:flex; align-items:center; gap:10px; min-width:0}
+  .tb-l .sub{margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12.5px}
+  .tb-r{display:flex; align-items:center; gap:2px; flex:0 0 auto}
+  .mark{width:36px; height:36px; border-radius:11px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(140deg,var(--hero1),var(--hero2)); box-shadow:0 8px 16px -12px rgba(8,32,24,.9)}
+  .mark svg{width:19px; height:19px}
+
+  .mtabs{display:flex; gap:2px; margin-bottom:14px; padding:3px; background:var(--track);
+    border-radius:var(--r-pill); overflow-x:auto; scrollbar-width:none}
+  .mtabs::-webkit-scrollbar{display:none}
+  .mtabs button{flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; padding:7px 14px;
+    font-size:13.5px; font-weight:600; border-radius:var(--r-pill); border:none; background:transparent; color:var(--mut)}
+  .mtabs button svg{width:15px; height:15px; opacity:.85}
+  .mtabs button:hover{color:var(--ink)}
+  .mtabs button.on{background:var(--card); color:var(--ink); box-shadow:var(--sh)}
+  .stabs{margin-top:-4px; padding:0; background:transparent; flex-wrap:wrap; overflow:visible; gap:6px}
+  .stabs button{padding:6px 11px; font-size:12.5px; border:1px solid var(--line); background:var(--card); color:var(--ink)}
+  .stabs button.on{background:var(--ink); border-color:var(--ink); color:var(--card); box-shadow:none}
+  .stabs .dot{width:8px; height:8px; margin-right:5px}
+
+  /* ---------- store toggle ---------- */
+  .togbar{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:0 0 12px}
+  .tog{display:inline-flex; align-items:center; gap:6px; padding:5px 11px 5px 9px; border-radius:var(--r-pill);
+    border:1px solid var(--line); background:var(--card); font-size:12.5px; font-weight:600; color:var(--mut); width:auto}
+  .tog .sw{width:8px; height:8px; border-radius:var(--r-pill); background:var(--c,var(--s-none)); flex:0 0 auto; opacity:.45}
+  .tog.on{color:var(--ink); border-color:color-mix(in srgb, var(--c,var(--s-none)) 45%, var(--line));
+    background:color-mix(in srgb, var(--c,var(--s-none)) 12%, var(--card))}
+  .tog.on .sw{opacity:1}
+  .togp{display:inline-flex; gap:0; margin-left:auto}
+  .freshbar{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; margin:0 0 12px;
+    padding:10px 14px; background:var(--card); border:1px solid var(--line2); border-radius:var(--r); box-shadow:var(--sh)}
+  .fritem{display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--mut); min-width:0}
+  .fritem .chip{flex:0 0 auto}
+  .frn{overflow:hidden; text-overflow:ellipsis}
+  .frr{margin-left:auto; font-size:11.5px; opacity:.8}
+  .rngbar{margin:0 0 8px}
+  .rngd{display:inline-flex; align-items:center; gap:6px; margin-left:2px; font-size:12px; color:rgba(238,245,240,.7)}
+  .rngd input{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); color:#fff; color-scheme:dark;
+    border-radius:var(--r-pill); padding:4px 9px; font:inherit; font-size:12px; width:auto}
+  .rngd input:focus{outline:2px solid rgba(255,255,255,.35); outline-offset:1px}
+  .basis{font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; opacity:.55}
+  .togx{font-size:12px; font-weight:600; color:var(--mut); background:none; border:none; padding:5px 7px; width:auto;
+    text-decoration:underline; text-underline-offset:3px}
+  .togbar.dk .tog{background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.14); color:rgba(238,245,240,.72)}
+  .togbar.dk .tog.on{background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.38); color:#fff}
+  .togbar.dk .togx{color:rgba(238,245,240,.72)}
+
+  /* ---------- rows & lists ---------- */
+  .row{display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid var(--line2); align-items:flex-start}
+  .row:first-of-type{border-top:none}
+  .row b{display:block; font-size:14px; font-weight:600}
+  .row .meta{color:var(--mut); font-size:12.5px; margin-top:2px}
+  .row .rv{font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums}
+  .row.tot{border-top:1px solid var(--line); margin-top:6px; padding-top:12px}
+  .row.tot b,.row.tot .rv{font-size:14.5px}
+  .srow{display:flex; align-items:flex-start; padding:10px 0; border-top:1px solid var(--line2)}
+  .srow:first-of-type{border-top:none}
+  .sbody{flex:1; min-width:0}
+  .srow .meta{color:var(--mut); font-size:12.5px; margin-top:5px}
+  .brow{padding:9px 0; border-top:1px solid var(--line2)}
+  .brow:first-of-type{border-top:none}
+  .bhead{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .bhead b{font-size:14px; font-weight:600}
+  .bhead .rv{font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums}
+  .meta{color:var(--mut)}
+  .up{color:var(--good); font-weight:600; font-size:12.5px}
+  .down{color:var(--crit); font-weight:600; font-size:12.5px}
+
+  /* store monogram — tinted, so light hues stay legible */
+  .mono{display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;
+    border-radius:var(--r-xs); margin-right:10px; flex:0 0 auto;
+    font:700 10px/1 var(--fdisp); letter-spacing:.02em;
+    background:var(--c,var(--s-none)); color:#fff}
+  @supports (color:color-mix(in oklab,red,blue)){
+    .mono{background:color-mix(in oklab, var(--c,var(--s-none)) 18%, var(--card));
+      color:color-mix(in oklab, var(--c,var(--s-none)) 78%, var(--ink));
+      box-shadow:inset 0 0 0 1px color-mix(in oklab, var(--c,var(--s-none)) 26%, transparent)}
+  }
+  .mono.sm{width:22px; height:22px; border-radius:6px; font-size:8.5px; margin-right:8px}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:var(--r-pill); margin-right:7px;
+    background:var(--c,var(--s-none))}
+
+  /* ---------- chips ---------- */
+  .chip{display:inline-flex; align-items:center; font-size:11.5px; font-weight:600; padding:3px 9px;
+    border-radius:var(--r-pill); white-space:nowrap; border:1px solid transparent}
+  .c-new{background:var(--crit-bg); color:var(--crit); border-color:color-mix(in srgb,var(--crit) 22%,transparent)}
+  .c-sched{background:var(--warn-bg); color:var(--warn); border-color:color-mix(in srgb,var(--warn) 22%,transparent)}
+  .c-done{background:var(--good-bg); color:var(--good); border-color:color-mix(in srgb,var(--good) 22%,transparent)}
+  .c-mut{background:transparent; color:var(--mut)}   /* no threshold row — say nothing rather than claim ok */
+  .c-urgent{background:var(--crit); color:#fff}
+  .c-soon,.c-low{background:var(--info-bg); color:var(--mut); border-color:var(--line2)}
+
+  /* ---------- KPI ---------- */
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px}
+  .kpi{background:var(--card); border:1px solid var(--line2); border-radius:var(--r-sm); padding:12px 14px 13px;
+    min-width:0; box-shadow:var(--sh); animation:in .2s ease both}
+  .kpi .kl{font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--mut)}
+  .kpi .kv{font-family:var(--fdisp); font-weight:700; font-size:22px; letter-spacing:-.02em; margin-top:5px; white-space:nowrap}
+  .kpi .kd{font-size:12px; color:var(--mut); margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  /* the band a tile sits in, straight from dim_threshold — colour is the only thing added */
+  .bookpick{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 12px}
+  .bookpick .chip{cursor:pointer; border:1px solid var(--line2); background:var(--card)}
+  .bookpick .chip.on{background:var(--ink); color:var(--card); border-color:var(--ink)}
+  .bookwrap{overflow-x:auto; border:1px solid var(--line2); border-radius:var(--r-sm)}
+  table.book{border-collapse:collapse; width:100%; font-size:12.5px}
+  table.book th,table.book td{padding:5px 9px; white-space:nowrap; border-bottom:1px solid var(--line2)}
+  table.book th{position:sticky; top:0; background:var(--card); font-size:10.5px; letter-spacing:.05em;
+                text-transform:uppercase; color:var(--mut); text-align:right; font-weight:600}
+  table.book th.d,table.book td.d{text-align:left}
+  table.book th.m{color:var(--warn)}
+  table.book th.s,table.book td.s{color:var(--mut); background:color-mix(in srgb,var(--mut) 6%,transparent)}
+  table.book td.num{text-align:right; font-variant-numeric:tabular-nums}
+  table.book td.d:first-child{position:sticky; left:0; background:var(--card)}
+  table.book .tot{font-weight:600}
+  table.book tfoot td{border-top:2px solid var(--line2); border-bottom:0; background:var(--bg2,transparent)}
+  table.book .z{color:var(--mut); opacity:.45}
+  table.book.blk td.d:nth-child(2){white-space:normal}
+  .kpi.bnd-green{border-left:3px solid var(--good)}
+  .kpi.bnd-amber{border-left:3px solid var(--warn)}
+  .kpi.bnd-red{border-left:3px solid var(--crit)}
+  .tgt{font-size:10.5px; color:var(--mut); border:1px solid var(--line2); border-radius:10px; padding:1px 7px; white-space:nowrap}
+  .kstrip{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  @media (min-width:760px){.kstrip{grid-template-columns:repeat(4,1fr)}}
+  .kstrip .kpi .kv{font-size:23px}
+
+  /* ---------- dashboard grid ---------- */
+  body.wide{max-width:1180px}
+  .dash{display:grid; grid-template-columns:repeat(12,1fr); gap:12px; align-items:start}
+  .dash > *{grid-column:span 12; margin-bottom:0; min-width:0; align-self:start}
+  @media (min-width:760px){.dash > .s8{grid-column:span 8} .dash > .s4{grid-column:span 4} .dash > .s6{grid-column:span 6}}
+
+  /* ---------- charts ---------- */
+  .chart{position:relative; margin-top:10px}
+  .bars{display:flex; align-items:flex-end; gap:3px; height:170px; padding-top:22px;
+    border-bottom:1px solid var(--line);
+    background:repeating-linear-gradient(to top, transparent 0, transparent calc(25% - 1px), var(--grid) calc(25% - 1px), var(--grid) 25%)}
+  .bar{flex:1; min-width:0; height:100%; display:flex; align-items:flex-end; position:relative}
+  .bar i{display:block; width:100%; min-height:3px; border-radius:4px 4px 0 0; background:var(--bar); transition:background .12s ease}
+  .bar.zero i{background:var(--bar-zero)}
+  .bar.fut i{background:transparent; border-top:2px dotted var(--bar-future); min-height:0; border-radius:0}
+  .bar.hi i{background:var(--bar-hi)}
+  .bar:hover i{background:var(--bar-hi)}
+  .bar.hi::after{content:attr(data-v); position:absolute; top:-19px; left:50%; transform:translateX(-50%);
+    font-size:11px; font-weight:600; white-space:nowrap; color:var(--ink); font-variant-numeric:tabular-nums}
+  .xax{display:flex; gap:3px; margin-top:6px}
+  .xax span{flex:1; min-width:0; font-size:10.5px; color:var(--mut); text-align:center; white-space:nowrap}
+  .vchart{display:flex; align-items:flex-end; gap:4px; height:120px; margin:14px 0 4px;
+    border-bottom:1px solid var(--line)}
+  .vchart i{flex:1; background:var(--c,var(--bar)); opacity:.45; border-radius:4px 4px 0 0; min-height:3px; position:relative}
+  .vchart i.hi{opacity:1}
+  .vchart i.hi::after{content:attr(data-v); position:absolute; top:-19px; left:50%; transform:translateX(-50%);
+    font-size:11px; font-weight:600; white-space:nowrap; color:var(--ink); font-variant-numeric:tabular-nums}
+  .vx{display:flex; justify-content:space-between; font-size:11px; color:var(--mut); margin-bottom:2px}
+  .hbar{height:6px; background:var(--track); border-radius:var(--r-pill); overflow:hidden; margin-top:7px}
+  .hbar i{display:block; height:100%; border-radius:var(--r-pill); background:var(--c,var(--bar))}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--mut); margin-top:10px}
+  .legend .sw{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+  .tip{position:absolute; top:0; z-index:3; background:var(--ink); color:var(--card); font-size:12px; line-height:1.45;
+    padding:8px 11px; border-radius:var(--r-xs); pointer-events:none; white-space:nowrap;
+    box-shadow:0 12px 26px -12px rgba(0,0,0,.6); display:none; transform:translateX(-50%)}
+  .tip.show{display:block}
+  .tip b{display:block; font-size:12.5px; margin-bottom:3px}
+  .tip .sw{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; vertical-align:0;
+    background:var(--c,var(--s-none))}
+  .minis{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px}
+  @media (min-width:760px){.minis{grid-template-columns:repeat(4,1fr)}}
+  .mini{border:1px solid var(--line2); border-radius:var(--r-sm); padding:10px 12px; background:var(--raise); min-width:0}
+  .mini .mh{display:flex; align-items:center; gap:8px; min-width:0}
+  .mini .mono{width:24px; height:24px; border-radius:6px; font-size:8.5px; margin:0}
+  .mini .mn{font-size:12.5px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .mini .mv{font-family:var(--fdisp); font-weight:700; font-size:17px; letter-spacing:-.02em; margin-top:6px}
+  .mini .mb{display:flex; align-items:flex-end; gap:2px; height:32px; margin-top:8px}
+  .mini .mb i{flex:1; min-height:0; border-radius:2px 2px 0 0; background:var(--c,var(--bar)); opacity:.85}
+  .mini .md{font-size:11px; color:var(--mut); margin-top:5px}
+
+  /* ---------- misc ---------- */
+  .thumb{height:46px; border-radius:var(--r-xs); border:1px solid var(--line); margin:6px 6px 0 0; vertical-align:top}
+  .skel{height:88px; border-radius:var(--r); margin-bottom:12px; border:1px solid var(--line2);
+    background:linear-gradient(90deg,var(--track) 25%,var(--raise) 50%,var(--track) 75%); background-size:200% 100%;
+    animation:sk 1.2s linear infinite}
+  @keyframes sk{to{background-position:-200% 0}}
+  .att .row b{display:flex; align-items:center}
+
+  /* ---------- login ---------- */
+  .login{max-width:380px; margin:9vh auto 0; text-align:center}
+  .login .lmark{width:62px; height:62px; border-radius:18px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(140deg,var(--hero1),var(--hero2)); box-shadow:0 20px 34px -20px rgba(8,32,24,.95)}
+  .login .lmark svg{width:30px; height:30px}
+  .login h1{font-size:27px}
+  .login .card{text-align:left; margin-top:16px; box-shadow:var(--sh-lift)}
+
+  .nofx .card,.nofx .kpi,.nofx .cockpit{animation:none}
+  @keyframes in{from{opacity:0; transform:translateY(3px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    .card,.kpi,.cockpit,.hero{animation:none} button{transition:none} .skel{animation:none}
+  }
+  @media print{ .topbar,.togbar,.mtabs,button{display:none !important} .card{box-shadow:none; break-inside:avoid} }
+</style>
+<style>
+  /* app-only additions — everything above is the Rocket OS design system, verbatim */
+  body{padding-top:env(safe-area-inset-top)}
+  .qbar{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 14px; margin-bottom:12px;
+    border-radius:var(--r-sm); background:var(--warn-bg); color:var(--warn); font-size:13px}
+  .qbar button{margin:0}
+</style>
+</head>
+<body>
+
+<div id="v-login" class="login">
+  <div class="lmark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.9 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></div>
+  <h1>Store walk</h1>
+  <p class="sub">Rocket OS — the morning round</p>
+  <div class="card">
+    <div class="err" id="login-err"></div>
+    <input id="in-user" placeholder="Username" autocomplete="username" autocapitalize="none">
+    <input type="password" id="in-pw" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    <button class="primary" onclick="login()">Sign in</button>
+  </div>
+</div>
+
+<div id="v-app" class="hide">
+  <div class="topbar">
+    <div class="tb-l"><div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.9 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></div><div style="min-width:0"><h1 id="app-title">Store walk</h1><p class="sub" id="app-sub"></p></div></div>
+    <span class="tb-r"><button class="refresh" id="themebtn" onclick="cycleTheme()" title="light / dark / auto" aria-label="colour theme">◐</button><button class="refresh" onclick="refresh()" title="refresh">↻</button><button class="logout" onclick="logout()">sign out</button></span>
+  </div>
+  <div id="qbar"></div>
+  <div id="content"></div>
+  <div class="spin hide" id="spin">working…</div>
+</div>
+
+<script>
+  // ================= Store walk — the app shell =================
+  // The two forms of the morning round (cash fund + hygienics), as an installable app for
+  // Android and iOS. The UI below the shell is sliced VERBATIM from the live Rocket OS
+  // index.html by build.py, so a design change in the OS reaches the app on the next build.
+  // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
+  var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
+  var APP_VERSION = '20260924-1938';
+  var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
+  var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
+
+  function $(id){ return document.getElementById(id); }
+
+  // Colour theme: auto (follows the tablet/phone) → light → dark, per device.
+  function applyTheme(t){
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('ros_theme', t); } catch(e){}
+    var b = document.getElementById('themebtn');
+    if (b) b.textContent = t === 'dark' ? '☾' : t === 'light' ? '☀' : '◐';
+  }
+  function cycleTheme(){
+    var t = 'auto'; try { t = localStorage.getItem('ros_theme') || 'auto'; } catch(e){}
+    applyTheme(t === 'auto' ? 'light' : t === 'light' ? 'dark' : 'auto');
+  }
+  (function(){ var t = 'auto'; try { t = localStorage.getItem('ros_theme') || 'auto'; } catch(e){} applyTheme(t); })();
+  window.addEventListener('scroll', function(){
+    var b = document.querySelector('.topbar'); if (b) b.classList.toggle('stuck', window.scrollY > 4);
+  }, { passive: true });
+
+  function busy(on){ $('spin').classList.toggle('hide', !on); }
+  function skeleton(n){ var h = ''; for (var i = 0; i < (n || 3); i++) h += '<div class="skel"></div>'; return h; }
+  function esc(s){ return String(s||'').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function peso(n){ return '₱ ' + Number(n||0).toLocaleString('en-PH', {maximumFractionDigits:0}); }
+  function fmtD(iso){
+    var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var p = String(iso).split('-');
+    return p.length === 3 ? M[Number(p[1])-1] + ' ' + Number(p[2]) : iso;
+  }
+
+  // ---- transport: one POST per call, no custom headers (no CORS preflight), redirects followed ----
+  function rpc(p){
+    if (window.WALK_MOCK) return Promise.resolve(window.WALK_MOCK(p));
+    return fetch(APP_URL, { method:'POST', body: JSON.stringify(p) }).then(function(r){ return r.json(); });
+  }
+  var QUEUEABLE = { run_submit:1, hyg_submit:1 };   // what may wait on the tablet when there is no signal
+  function call(p, cb, errEl){
+    p.user = S.user; p.pw = S.pw;
+    busy(true);
+    rpc(p).then(function(r){
+      busy(false);
+      if (!r || !r.ok) {
+        if (r && r.error === 'wrong username or password' && S.role){ logout(); $('login-err').textContent = 'please sign in again'; return; }
+        if (errEl && $(errEl)) $(errEl).textContent = (r && r.error) || 'something went wrong';
+        return;
+      }
+      if (errEl && $(errEl)) $(errEl).textContent = '';
+      cb(r);
+    }).catch(function(e){
+      busy(false);
+      if (QUEUEABLE[p.action] && S.role){ queuePush(p); cb({ ok:true, queued:true }); return; }
+      if (errEl && $(errEl)) $(errEl).textContent = 'no internet — check the connection and try again';
+    });
+  }
+
+  // Stale-while-revalidate: paint the last known data instantly from this device,
+  // fetch fresh behind it, repaint when it lands. Same keys as the OS.
+  function swr(p, render, keyx){
+    var key = 'c_' + S.user + '_' + p.action + '_' + (keyx || S.store || '');
+    var hit = null;
+    try { hit = JSON.parse(localStorage.getItem(key)); } catch(e){}
+    if (hit) render(hit, true);
+    call(p, function(r){
+      try { localStorage.setItem(key, JSON.stringify(r)); } catch(e){}
+      render(r, false);
+    }, null);
+    return !!hit;
+  }
+  function bust(action){ try { localStorage.removeItem('c_' + S.user + '_' + action + '_' + (S.store || '')); } catch(e){} }
+
+  // ---- offline queue: a run sent with no signal waits here and goes out on the next open or when the network returns ----
+  function queueRead(){ try { return JSON.parse(localStorage.getItem('walk_queue')) || []; } catch(e){ return []; } }
+  function queueWrite(q){ try { localStorage.setItem('walk_queue', JSON.stringify(q)); } catch(e){} }
+  function queuePush(p){
+    var q = queueRead(); q.push({ p:p, at:new Date().toISOString() }); queueWrite(q);
+    // show it as sent-pending in the list so the store is not re-entered
+    var today = (RUNS && RUNS.today) || new Date().toISOString().slice(0,10);
+    if (p.action === 'run_submit' && RUNS){
+      RUNS.runs = RUNS.runs.filter(function(r){ return !(r.day === today && r.store === p.store); });
+      RUNS.runs.unshift({ id:'queued', day:today, store:p.store, fund:p.fund, endorsed_by:p.endorsed_by, received_by:p.received_by,
+        quick_counts:p.quick_counts, booklet_no:p.booklet_no, bir_first5:p.bir_first5, bir_time:p.bir_time,
+        columnar_sales:p.columnar_sales, columnar_date:p.columnar_date, note:p.note, recorded_by:S.user + ' · waiting to send' });
+      try { localStorage.setItem('c_' + S.user + '_runs_recent_', JSON.stringify(RUNS)); } catch(e){}
+    }
+    if (p.action === 'hyg_submit' && HYGDATA){
+      var total = p.scores.reduce(function(a,b){ return a+b; }, 0);
+      var band = total >= 41 ? 'excellent' : total >= 32 ? 'good' : total >= 23 ? 'acceptable' : total >= 14 ? 'unacceptable' : 'critical';
+      HYGDATA.audits = HYGDATA.audits.filter(function(a){ return !(a.day === today && a.store === p.store); });
+      HYGDATA.audits.unshift({ id:'queued', day:today, store:p.store, scores:JSON.stringify(p.scores), total:total, band:band, auditor:p.auditor });
+      try { localStorage.setItem('c_' + S.user + '_hyg_recent_', JSON.stringify(HYGDATA)); } catch(e){}
+    }
+    drawQueueBar();
+  }
+  var SENDING = false;
+  function queueSend(){
+    var q = queueRead();
+    if (!q.length || SENDING || !S.role) return;
+    SENDING = true;
+    var next = function(){
+      q = queueRead();
+      if (!q.length){ SENDING = false; drawQueueBar(); bust('runs_recent'); bust('hyg_recent'); renderRunZone(); return; }
+      var item = q[0]; item.p.user = S.user; item.p.pw = S.pw;
+      rpc(item.p).then(function(r){
+        if (r && r.ok){ queueWrite(queueRead().slice(1)); next(); }
+        else { SENDING = false; drawQueueBar(r && r.error); }
+      }).catch(function(){ SENDING = false; drawQueueBar(); });
+    };
+    next();
+  }
+  function drawQueueBar(err){
+    var b = $('qbar'); if (!b) return;
+    var n = queueRead().length;
+    if (!n){ b.innerHTML = ''; return; }
+    b.innerHTML = '<div class="qbar"><span>' + n + ' entr' + (n === 1 ? 'y' : 'ies') + ' saved on this tablet — ' + (err ? 'not accepted: ' + esc(err) : 'sends when the internet is back') + '</span>'
+      + '<button class="small" onclick="queueSend()">Send now</button></div>';
+  }
+  window.addEventListener('online', queueSend);
+
+  // ---- session ----
+  function login(){
+    S.user = $('in-user').value.trim(); S.pw = $('in-pw').value;
+    if (!S.user || !S.pw) return;
+    call({action:'login'}, function(r){
+      if (r.role !== 'walk'){
+        S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
+        $('login-err').textContent = 'this app is for the store walk only — use Rocket OS on the web for everything else';
+        return;
+      }
+      S.role = r.role; S.store = r.store; S.name = r.name; S.stores = r.stores;
+      try {
+        localStorage.setItem('ros_u', S.user); localStorage.setItem('ros_p', S.pw);
+        localStorage.setItem('ros_profile', JSON.stringify({ role:r.role, store:r.store, name:r.name, stores:r.stores }));
+      } catch(e){}
+      boot();
+    }, 'login-err');
+  }
+  function logout(){
+    try { localStorage.removeItem('ros_u'); localStorage.removeItem('ros_p'); localStorage.removeItem('ros_profile'); } catch(e){}
+    S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
+    $('in-user').value=''; $('in-pw').value='';
+    $('v-app').classList.add('hide'); $('v-login').classList.remove('hide');
+  }
+  function boot(){
+    $('v-login').classList.add('hide'); $('v-app').classList.remove('hide');
+    $('app-sub').textContent = S.name + ' — the morning round';
+    refresh();
+    queueSend();
+  }
+  function refresh(){
+    RUNOPEN = false;
+    bust('runs_recent'); bust('hyg_recent');
+    $('content').innerHTML = '<div id="runzone">' + skeleton(2) + '</div>';
+    drawQueueBar();
+    renderRunZone();
+  }
+
+  // ---- morning run (Store Cash Fund sheet, digitized) ----
+  var FUND_STD = 10000;
+  var RUNOPEN = false;
+  var RUNS = null;
+  var WALK_STORES = ['MCC','DC','MCBC','P99','BK'];  // the office round — Mike's five outlets; VAL/SP have their own admin
+  var WALK_STORE = null;
+
+  function fundChip(f){
+    f = Number(f);
+    if (isNaN(f)) return '';
+    if (f >= FUND_STD) return '<span class="chip c-done">fund ✓ '+peso(f)+'</span>';
+    if (f >= FUND_STD/2) return '<span class="chip c-sched">low — '+peso(f)+'</span>';
+    return '<span class="chip c-new">down to '+peso(f)+'</span>';
+  }
+
+
+
+  // ---- hygienics (9 areas × 1–5, ridden along with the morning run) ----
+  var HYG_AREAS = ['Refrigeration','Shelves & Workstations','Waste & Recycling','Floors','Ceiling & Fans','Furniture & Fixtures','Outside Area','Staff Toilet','Storage Areas'];
+  var HYGDATA = null;
+  var HYGS = [];
+
+  function hygInfo(band){
+    return {
+      excellent:    {c:'c-done',   label:'excellent',    cons:null},
+      good:         {c:'c-done',   label:'good',         cons:null},
+      acceptable:   {c:'c-sched',  label:'acceptable',   cons:'supervisor must report the result in the Management GC'},
+      unacceptable: {c:'c-new',    label:'unacceptable', cons:'free staff meal canceled for both days'},
+      critical:     {c:'c-urgent', label:'CRITICAL',     cons:'Notice to Explain (NTE) to the person in charge'},
+    }[band] || {c:'c-soon', label:String(band||'—'), cons:null};
+  }
+  function hygChip(a){ var i = hygInfo(a.band); return '<span class="chip '+i.c+'">'+a.total+'/45 · '+i.label+'</span>'; }
+  function hygWeakest(a){
+    var sc; try { sc = JSON.parse(a.scores); } catch(e){ return ''; }
+    var min = Math.min.apply(null, sc);
+    var names = HYG_AREAS.filter(function(_, i){ return sc[i] === min; });
+    return 'weakest: ' + names.slice(0, 2).join(', ') + ' (' + min + ')';
+  }
+  function hygTodayFor(store){
+    if (!HYGDATA) return null;
+    return HYGDATA.audits.filter(function(a){ return a.day === HYGDATA.today && a.store === store; })[0] || null;
+  }
+
+  function renderRunZone(){
+    var z = $('runzone'); if (!z) return;
+    swr({action:'runs_recent'}, function(r){ RUNS = r; if (!RUNOPEN) drawRunZone(); });
+    swr({action:'hyg_recent'}, function(r){ HYGDATA = r; if (!RUNOPEN) drawRunZone(); });
+  }
+
+  // Which store the run card is about: the tablet's own store, or the one picked on the walk.
+  function runStore(){ return S.role === 'branch' ? S.store : WALK_STORE; }
+  function runToday(st){
+    if (!RUNS) return null;
+    return RUNS.runs.filter(function(r){ return r.day === RUNS.today && r.store === st; })[0] || null;
+  }
+
+  function drawRunZone(){
+    var z = $('runzone'); if (!z || !RUNS) return;
+    var st = runStore();
+    var h = S.role === 'branch' ? '' : walkListHtml();
+    if (st) h += runCardHtml(st);
+    z.innerHTML = h;
+    if (RUNOPEN){ fundLive(); hygPaint(); }
+  }
+
+  // The office round: Cherry walks the group stores every morning. One row per store
+  // with today's state; tapping it opens the same form the store tablet has.
+  function walkListHtml(){
+    var done = WALK_STORES.filter(function(st){ return !!runToday(st); }).length;
+    var h = '<div class="card"><h2>Store walk — today</h2><p class="sub">'+esc(fmtD(RUNS.today))+' · '+done+' of '+WALK_STORES.length+' stores done · tap a store to fill its morning run</p>';
+    WALK_STORES.forEach(function(st){
+      var t = runToday(st), hy = hygTodayFor(st);
+      h += '<div class="row" style="cursor:pointer" onclick="walkPick(\''+st+'\')"><div><b><span class="dot" style="--c:'+(BRAND[st]||'var(--s-none)')+'"></span>'+esc(S.stores[st]||st)+'</b>'
+        + '<div class="meta">'+(t ? 'sent by '+esc(t.recorded_by)+' · '+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—') : 'not yet')+(hy ? ' · '+hygWeakest(hy) : '')+'</div></div>'
+        + '<div>'+(t ? fundChip(t.fund) : '<span class="chip c-sched">not yet</span>')+(hy ? ' '+hygChip(hy) : '')
+        + ' <button class="small" onclick="event.stopPropagation();walkPick(\''+st+'\')">'+(t ? 'Open' : 'Fill')+'</button></div></div>';
+    });
+    return h + '</div>';
+  }
+  function walkPick(st){
+    WALK_STORE = st;
+    if (runToday(st)){ RUNOPEN = false; drawRunZone(); } else openRunForm();
+    var c = $('runcard'); if (c && c.scrollIntoView) c.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function runCancel(){ RUNOPEN = false; drawRunZone(); }
+
+  function runCardHtml(st){
+    var t = runToday(st), office = S.role !== 'branch';
+    var h = '<div class="card accent" id="runcard"><h2>Morning run'+(office ? ' — '+esc(S.stores[st]||st) : '')+'</h2>';
+    if (!RUNOPEN && t){
+      h += '<p class="sub">sent for today by '+esc(t.recorded_by)+'</p>'
+        + '<div class="row" style="padding:6px 0"><div><b>Cash fund</b><div class="meta">'+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—')+'</div></div><div>'+fundChip(t.fund)+'</div></div>'
+        + '<div class="row" style="padding:6px 0"><div><b>BIR first 5 sales</b><div class="meta">booklet '+esc(t.booklet_no||'—')+(t.quick_counts?' · '+esc(t.quick_counts):'')+'</div></div><div><span class="chip c-done">'+esc(t.bir_first5||'checked')+(t.bir_time?' · '+esc(t.bir_time):'')+'</span></div></div>';
+      if (t.columnar_sales !== '' && t.columnar_sales != null)
+        h += '<div class="row" style="padding:6px 0"><div><b>Columnar book</b><div class="meta">'+(t.columnar_date ? 'book date '+esc(fmtD(t.columnar_date)) : '—')+'</div></div><div><span class="chip c-done">sales '+peso(t.columnar_sales)+'</span></div></div>';
+      var hy = hygTodayFor(st);
+      if (hy){
+        var hi = hygInfo(hy.band);
+        h += '<div class="row" style="padding:6px 0"><div><b>Hygienics audit</b><div class="meta">'+hygWeakest(hy)+' · by '+esc(hy.auditor)+'</div>'
+          + (hi.cons ? '<div class="meta" style="color:var(--crit)">→ '+hi.cons+'</div>' : '')
+          + '</div><div>'+hygChip(hy)+'</div></div>';
+      } else {
+        h += '<div class="row" style="padding:6px 0"><div><b>Hygienics audit</b><div class="meta">not scored today</div></div><div><span class="chip c-sched">pending</span></div></div>';
+      }
+      h += '<button class="small" onclick="openRunForm()">Update</button>';
+    } else if (!RUNOPEN){
+      h += '<p class="sub">the cash-fund sheet + hygienics audit, digital — fill it together with the '+(office ? 'store supervisor' : 'office runner')+'</p>'
+        + '<button class="primary" onclick="openRunForm()">Fill this morning\'s run</button>';
+    } else {
+      var v = function(f){ return t ? esc(t[f]) : ''; };
+      h += '<div class="err" id="mr-err"></div>'
+        + (office ? '<input type="hidden" id="mr-store" value="'+esc(st)+'">' : '')
+        + '<label style="font-size:13px;color:var(--mut)">Cash fund counted (standard ₱ '+FUND_STD.toLocaleString()+')</label>'
+        + '<input type="number" inputmode="decimal" id="mr-fund" oninput="fundLive()" value="'+(t?t.fund:'')+'" placeholder="₱">'
+        + '<div id="mr-fund-line"></div>'
+        + '<div style="display:flex;gap:8px"><input id="mr-endorsed" value="'+v('endorsed_by')+'" placeholder="Endorsed by" style="flex:1">'
+        + '<input id="mr-received" value="'+v('received_by')+'" placeholder="Received by" style="flex:1"></div>'
+        + '<input id="mr-counts" value="'+v('quick_counts')+'" placeholder="Quick counts — e.g. water 36 · coffee cups 32 · shake cups 138">'
+        + '<div style="display:flex;gap:8px"><input id="mr-booklet" value="'+v('booklet_no')+'" placeholder="OR booklet no." style="flex:1">'
+        + '<select id="mr-bir" style="flex:1">';
+      ['No sale','1 sale','2 sales','3 sales','4 sales','5 sales','Not checked'].forEach(function(o){
+        h += '<option'+(t && t.bir_first5===o ? ' selected' : '')+'>'+o+'</option>';
+      });
+      h += '</select><input type="time" id="mr-btime" value="'+v('bir_time')+'" style="flex:1"></div>'
+        + '<label style="font-size:13px;color:var(--mut);display:block;margin:6px 0 4px">Columnar book — total sales written in it, and the date of the last page</label>'
+        + '<div style="display:flex;gap:8px"><input type="number" inputmode="decimal" id="mr-colsales" value="'+v('columnar_sales')+'" placeholder="Total sales in columnar ₱" style="flex:1">'
+        + '<input type="date" id="mr-coldate" value="'+v('columnar_date')+'" style="flex:1"></div>'
+        + '<label style="font-size:13px;color:var(--mut);display:block;margin:6px 0 4px">Hygienics audit — tap a score per area (1 very poor … 5 excellent). All 9 or none.</label>';
+      HYG_AREAS.forEach(function(area, i){
+        h += '<div class="row" style="padding:6px 0;align-items:center"><div><b style="font-weight:500;font-size:13.5px">'+esc(area)+'</b></div><div class="hsegrow">';
+        for (var s = 1; s <= 5; s++) h += '<button class="hseg" id="hg-'+i+'-'+s+'" onclick="hygSet('+i+','+s+')">'+s+'</button>';
+        h += '</div></div>';
+      });
+      h += '<div id="hyg-line" class="sub" style="margin:4px 0 10px"></div>'
+        + '<input id="mr-note" value="'+v('note')+'" placeholder="Note (optional)">'
+        + '<button class="primary" id="mr-send" onclick="runSubmit()">'+(t?'Update':'Send')+' the morning run</button>'
+        + (office ? ' <button class="small" onclick="runCancel()">Cancel</button>' : '');
+    }
+    return h + '</div>';
+  }
+
+  function openRunForm(){
+    RUNOPEN = true;
+    var hy = hygTodayFor(runStore());
+    HYGS = [];
+    if (hy){ try { HYGS = JSON.parse(hy.scores); } catch(e){} }
+    while (HYGS.length < HYG_AREAS.length) HYGS.push(null);
+    drawRunZone();
+  }
+  function hygSet(i, v){ HYGS[i] = HYGS[i] === v ? null : v; hygPaint(); }
+  function hygPaint(){
+    HYG_AREAS.forEach(function(_, i){
+      for (var s = 1; s <= 5; s++){
+        var b = $('hg-'+i+'-'+s);
+        if (b) b.classList.toggle('on', HYGS[i] === s);
+      }
+    });
+    var line = $('hyg-line'); if (!line) return;
+    var done = HYGS.filter(function(x){ return x != null; }).length;
+    if (done === 0) line.innerHTML = 'not scored — the run can be sent without it';
+    else if (done < HYG_AREAS.length) line.innerHTML = done + ' of ' + HYG_AREAS.length + ' scored — finish all areas (tap a score again to clear it)';
+    else {
+      var total = HYGS.reduce(function(a, b){ return a + b; }, 0);
+      var band = total >= 41 ? 'excellent' : total >= 32 ? 'good' : total >= 23 ? 'acceptable' : total >= 14 ? 'unacceptable' : 'critical';
+      var info = hygInfo(band);
+      line.innerHTML = '<span class="chip '+info.c+'">'+total+'/45 · '+info.label+'</span>' + (info.cons ? ' <span style="color:var(--crit)">→ '+info.cons+'</span>' : '');
+    }
+  }
+
+  function fundLive(){
+    var box = $('mr-fund-line'); if (!box) return;
+    var val = $('mr-fund').value;
+    box.innerHTML = val === '' ? '' :
+      '<div class="row" style="padding:2px 0 8px"><div><b style="font-weight:500">Standard '+peso(FUND_STD)+'</b></div><div>'+fundChip(Number(val))+'</div></div>';
+  }
+
+  function runSubmit(){
+    var fund = $('mr-fund').value;
+    if (fund === ''){ $('mr-err').textContent = 'count the fund first'; return; }
+    var scored = HYGS.filter(function(x){ return x != null; }).length;
+    if (scored > 0 && scored < HYG_AREAS.length){
+      $('mr-err').textContent = 'hygienics: score all ' + HYG_AREAS.length + ' areas or clear them';
+      return;
+    }
+    var btn = $('mr-send'); if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+    var p = {action:'run_submit', fund:fund, endorsed_by:$('mr-endorsed').value.trim(), received_by:$('mr-received').value.trim(),
+             quick_counts:$('mr-counts').value.trim(), booklet_no:$('mr-booklet').value.trim(),
+             bir_first5:$('mr-bir').value, bir_time:$('mr-btime').value,
+             columnar_sales:$('mr-colsales').value.trim(), columnar_date:$('mr-coldate').value, note:$('mr-note').value.trim()};
+    if (S.role !== 'branch' && $('mr-store')) p.store = $('mr-store').value;
+    var finish = function(){ RUNOPEN = false; bust('runs_recent'); bust('hyg_recent'); renderRunZone(); };
+    call(p, function(){
+      if (scored === HYG_AREAS.length){
+        var hp = {action:'hyg_submit', scores: HYGS, auditor: S.role === 'branch' ? $('mr-endorsed').value.trim() : (S.name || S.user)};
+        if (S.role !== 'branch' && $('mr-store')) hp.store = $('mr-store').value;
+        call(hp, finish, 'mr-err');
+      } else {
+        finish();
+      }
+    }, 'mr-err');
+    if (btn) setTimeout(function(){ btn.disabled = false; }, 4000);
+  }
+
+
+
+  // ---- start: resume the saved session, else the login screen ----
+  (function(){
+    try {
+      var u = localStorage.getItem('ros_u'), p = localStorage.getItem('ros_p'), prof = null;
+      try { prof = JSON.parse(localStorage.getItem('ros_profile')); } catch(e){}
+      if (u && p && prof && prof.role === 'walk'){
+        S.user = u; S.pw = p; S.role = prof.role; S.store = prof.store; S.name = prof.name; S.stores = prof.stores || {};
+        boot();
+      } else if (u && p){
+        // credentials without a saved profile (first open after an update): one login round trip
+        S.user = u; S.pw = p;
+        call({action:'login'}, function(r){
+          if (r.role !== 'walk'){ logout(); return; }
+          S.role = r.role; S.store = r.store; S.name = r.name; S.stores = r.stores;
+          try { localStorage.setItem('ros_profile', JSON.stringify({ role:r.role, store:r.store, name:r.name, stores:r.stores })); } catch(e){}
+          boot();
+        }, 'login-err');
+      }
+    } catch(e){}
+    if ('serviceWorker' in navigator && !window.WALK_MOCK) navigator.serviceWorker.register('./sw.js').catch(function(){});
+  })();
+</script>
+</body>
+</html>
