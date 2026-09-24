@@ -1,7 +1,7 @@
 // Store walk — service worker. Caches the app shell so the app opens without signal;
 // never touches the Apps Script calls (POST, other origin), which always go to the network.
 // VERSION is stamped by build.py — a new build = a new cache, old ones are dropped on activate.
-var VERSION = '20260924-2256';
+var VERSION = '20260924-2320';
 var CACHE = 'walk-' + VERSION;
 var SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
 

@@ -456,7 +456,7 @@
   // index.html by build.py, so a design change in the OS reaches the app on the next build.
   // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
   var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
-  var APP_VERSION = '20260924-2256';
+  var APP_VERSION = '20260924-2320';
   var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
   var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
 
@@ -637,7 +637,7 @@
   var HYG_AREAS = ['Refrigeration','Shelves & Workstations','Waste & Recycling','Floors','Ceiling & Fans','Furniture & Fixtures','Outside Area','Staff Toilet','Storage Areas'];
   // What to look at per area — three checks each, shown under the area name (v74).
   var HYG_GUIDE = [
-    ['Inside clean, no spills or ice build-up', 'Food covered, labelled, dated', 'Cold enough (chiller 5 °C or less), door seals clean'],
+    ['Inside clean, no spills, no water pooling', 'Drinks and cream feel cold, ice cream is hard', 'Food covered and dated, no frost, seals clean'],   // v78: no thermometers yet — checks she can judge by hand
     ['Surfaces wiped, not sticky', 'Tools and boards clean and put away', 'No old food or crumbs'],
     ['Bins closed, not overflowing', 'Bags changed, no smell', 'Recyclables separated'],
     ['Swept and mopped, dry', 'Corners and under counters clean', 'No grease or debris'],
