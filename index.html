@@ -36,8 +36,8 @@
     --accent-strong:var(--accent);   /* fallback */
 
     /* --- status --- */
-    --good:#0F7E52; --good-bg:#E3F2EA;
-    --warn:#9A6600; --warn-bg:#F8EEDA;
+    --good:#0B6E47; --good-bg:#E3F2EA;   /* v76: was #0F7E52 (4.40:1 on the chip) */
+    --warn:#845700; --warn-bg:#F8EEDA;   /* v76: was #9A6600 (4.27:1 on the chip) */
     --crit:#B3261E; --crit-bg:#FBE9E7;
     --info-bg:#EDF1EF;
 
@@ -174,21 +174,36 @@
     text-decoration:underline; text-underline-offset:3px}
   .refresh{font-size:16px; line-height:1; background:none; border:none; padding:7px 9px; color:var(--mut); border-radius:var(--r-xs)}
   .refresh:hover{background:var(--raise); color:var(--ink)}
-  .hsegrow{display:flex; gap:4px}
+  .tb-r .refresh,.tb-r .logout{min-width:44px; min-height:44px}
+  .tb-r .logout{margin-left:12px}
+  .hsegrow{display:flex; gap:8px; flex:0 0 auto}
   .fl{display:block; margin:0 0 10px; min-width:0}
-  .fl > .fll{display:block; font-size:12.5px; color:var(--mut); margin:0 0 4px; line-height:1.35}
+  .fl > .fll{display:block; font-size:14px; color:var(--ink2); margin:0 0 4px; line-height:1.35}
   .fl input,.fl select{margin-bottom:0}
   .fl select + input{margin-top:6px}
   .frow{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end}
   .frow > .fl{flex:1 1 150px}
-  .hguide{margin:3px 0 0; padding-left:16px; font-size:12.5px; line-height:1.4; color:var(--mut)}
-  .hlegend{font-size:12.5px; color:var(--mut); margin:2px 0 4px}
+  .hguide{margin:3px 0 0; padding-left:18px; font-size:14px; line-height:1.45; color:var(--ink2)}
+  .hlegend{font-size:13.5px; color:var(--ink2); margin:2px 0 4px}
+  .row.hrow{flex-wrap:wrap; align-items:center; padding:10px 0}
+  .row.hrow > div:first-child{flex:1 1 220px; min-width:0}
+  .fsec{font-size:16px; font-weight:700; color:var(--ink); margin:20px 0 10px; padding-top:16px; border-top:1px solid var(--line)}
+  .fsec.first{margin-top:6px; padding-top:0; border-top:0}
+  .qcrow.qchead{border-top:0; padding:0 0 2px}
+  .qchd{display:flex; gap:6px}
+  .qchd span{width:78px; text-align:center; font-size:13px; font-weight:600; color:var(--ink2)}
+  .bad{border-color:var(--crit) !important; box-shadow:0 0 0 3px var(--crit-bg) !important}
+  .row.hrow.bad{border-radius:var(--r-sm); outline:2px solid var(--crit); outline-offset:3px; box-shadow:none !important}
+  .ferr{flex-basis:100%; color:var(--crit); font-size:14px; font-weight:600; margin:6px 0 0}
+  #mr-err{font-size:14px; font-weight:600; margin:10px 0 8px}
+  .row.nextup{background:var(--info-bg); margin:0 -12px; padding-left:12px; padding-right:12px; border-radius:var(--r-sm)}
+  .sentline{color:var(--good); font-weight:700}
   .qcrow{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:7px 0; border-top:1px solid var(--line2)}
   .qcn{flex:1 1 140px; min-width:0; font-size:13.5px; font-weight:600}
-  .qch{display:block; font-weight:400; font-size:12px; color:var(--mut)}
+  .qch{display:block; font-weight:400; font-size:13px; color:var(--ink2)}
   .qcin{display:flex; gap:6px}
   .qcin input{width:78px; margin:0; padding:8px}
-  .hseg{width:36px; padding:7px 0; font-size:13px; text-align:center}
+  .hseg{width:48px; height:48px; padding:0; font-size:15px; text-align:center}
   .hseg.on{background:var(--accent-strong); border-color:var(--accent-strong); color:#fff}
   .sched-in{display:flex; gap:6px; margin-top:6px; flex-wrap:wrap}
   .sched-in input{margin:0; padding:6px 8px; width:auto; font-size:13px}
@@ -293,7 +308,7 @@
   .c-done{background:var(--good-bg); color:var(--good); border-color:color-mix(in srgb,var(--good) 22%,transparent)}
   .c-mut{background:transparent; color:var(--mut)}   /* no threshold row — say nothing rather than claim ok */
   .c-urgent{background:var(--crit); color:#fff}
-  .c-soon,.c-low{background:var(--info-bg); color:var(--mut); border-color:var(--line2)}
+  .c-soon,.c-low{background:var(--info-bg); color:var(--ink2); border-color:var(--line2)}
 
   /* ---------- KPI ---------- */
   .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px}
@@ -426,7 +441,7 @@
 <div id="v-app" class="hide">
   <div class="topbar">
     <div class="tb-l"><div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.9 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></div><div style="min-width:0"><h1 id="app-title">Store walk</h1><p class="sub" id="app-sub"></p></div></div>
-    <span class="tb-r"><button class="refresh" id="themebtn" onclick="cycleTheme()" title="light / dark / auto" aria-label="colour theme">◐</button><button class="refresh" onclick="refresh()" title="refresh">↻</button><button class="logout" onclick="logout()">sign out</button></span>
+    <span class="tb-r"><button class="refresh" id="themebtn" onclick="cycleTheme()" title="light / dark / auto" aria-label="colour theme">◐</button><button class="refresh" onclick="refresh()" title="refresh">↻</button><button class="logout" onclick="logoutAsk()">sign out</button></span>
   </div>
   <div id="qbar"></div>
   <div id="content"></div>
@@ -440,7 +455,7 @@
   // index.html by build.py, so a design change in the OS reaches the app on the next build.
   // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
   var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
-  var APP_VERSION = '20260924-2202';
+  var APP_VERSION = '20260924-2251';
   var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
   var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
 
@@ -579,6 +594,7 @@
       boot();
     }, 'login-err');
   }
+  function logoutAsk(){ if (confirm('Sign out of this device? You need the password to sign in again.')) logout(); }
   function logout(){
     try { localStorage.removeItem('ros_u'); localStorage.removeItem('ros_p'); localStorage.removeItem('ros_profile'); } catch(e){}
     S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
@@ -692,9 +708,10 @@
   // Items + today's counts come with runs_recent. No items set up yet → the old free-text line.
   function quickCountsHtml(st, t){
     var items = (RUNS && RUNS.items && RUNS.items[st]) || [];
-    if (!items.length) return fld('Quick counts — as on the paper sheet', '<input id="mr-counts" value="'+(t ? esc(t.quick_counts) : '')+'" placeholder="e.g. water 36 · coffee cups 32 · shake cups 138">');
+    if (!items.length) return '<div class="fsec">Quick counts</div>' + fld('As on the paper sheet', '<input id="mr-counts" value="'+(t ? esc(t.quick_counts) : '')+'" placeholder="e.g. water 36 · coffee cups 32 · shake cups 138">');
     var v0 = function(x){ return x === 0 || x === '0' ? '0' : esc(x); };
-    var h = '<div class="fl"><span class="fll"><b style="color:var(--ink)">Quick counts</b> — count what is there now: full boxes, full packs, loose pieces. Leave empty what you did not count.</span>';
+    var h = '<div class="fsec">Quick counts</div><div class="fl"><span class="fll">Count what is there now: full boxes, full packs, loose pieces. Leave empty what you did not count.</span>'
+      + '<div class="qcrow qchead"><div class="qcn"></div><div class="qchd" aria-hidden="true"><span>Boxes</span><span>Packs</span><span>Loose</span></div></div>';
     items.forEach(function(it){
       var q = (RUNS.qc && RUNS.qc[st+'|'+it.id]) || {};
       var hint = it.pack_pcs ? ('1 pack = '+it.pack_pcs+' pcs' + (it.box_packs ? ' · 1 box = '+it.box_packs+' packs' : '')) : '';
@@ -734,10 +751,15 @@
   // with today's state; tapping it opens the same form the store tablet has.
   function walkListHtml(){
     var done = WALK_STORES.filter(function(st){ return !!runToday(st); }).length;
-    var h = '<div class="card"><h2>Store walk — today</h2><p class="sub">'+esc(fmtD(RUNS.today))+' · '+done+' of '+WALK_STORES.length+' stores done · tap a store to fill its morning run</p>';
+    var next = null;
+    if (JUST_SENT){ var at = WALK_STORES.indexOf(JUST_SENT);
+      for (var k = 1; k <= WALK_STORES.length && !next; k++){ var c = WALK_STORES[(at + k) % WALK_STORES.length]; if (!runToday(c)) next = c; } }
+    var h = '<div class="card"><h2>Store walk — today</h2>'
+      + (JUST_SENT ? '<p class="sub"><span class="sentline">✓ '+esc(S.stores[JUST_SENT]||JUST_SENT)+' sent</span>'+(next ? ' · next: <b>'+esc(S.stores[next]||next)+'</b>' : ' · all '+WALK_STORES.length+' stores done')+'</p>' : '')
+      + '<p class="sub">'+esc(fmtD(RUNS.today))+' · '+done+' of '+WALK_STORES.length+' stores done · tap a store to fill its morning run</p>';
     WALK_STORES.forEach(function(st){
       var t = runToday(st), hy = hygTodayFor(st);
-      h += '<div class="row" style="cursor:pointer" onclick="walkPick(\''+st+'\')"><div><b><span class="dot" style="--c:'+(BRAND[st]||'var(--s-none)')+'"></span>'+esc(S.stores[st]||st)+'</b>'
+      h += '<div class="row'+(st === next ? ' nextup' : '')+'" style="cursor:pointer" onclick="walkPick(\''+st+'\')"><div><b><span class="dot" style="--c:'+(BRAND[st]||'var(--s-none)')+'"></span>'+esc(S.stores[st]||st)+'</b>'
         + '<div class="meta">'+(t ? 'sent by '+esc(t.recorded_by)+' · '+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—') : 'not yet')+(hy ? ' · '+hygWeakest(hy) : '')+'</div></div>'
         + '<div>'+(t ? fundChip(t.fund) : '<span class="chip c-sched">not yet</span>')+(hy ? ' '+hygChip(hy) : '')
         + ' <button class="small" onclick="event.stopPropagation();walkPick(\''+st+'\')">'+(t ? 'Open' : 'Fill')+'</button></div></div>';
@@ -745,7 +767,7 @@
     return h + '</div>';
   }
   function walkPick(st){
-    WALK_STORE = st;
+    WALK_STORE = st; JUST_SENT = null;
     if (runToday(st)){ RUNOPEN = false; drawRunZone(); } else openRunForm();
     var c = $('runcard'); if (c && c.scrollIntoView) c.scrollIntoView({behavior:'smooth', block:'start'});
   }
@@ -776,12 +798,12 @@
     } else {
       var v = function(f){ return t ? esc(t[f]) : ''; };
       var now = new Date(), nowHM = ('0'+now.getHours()).slice(-2) + ':' + ('0'+now.getMinutes()).slice(-2);
-      var birOpts = '';
+      var birOpts = '<option value=""'+(!t || !t.bir_first5 ? ' selected' : '')+'>— choose —</option>';
       ['No sale','1 sale','2 sales','3 sales','4 sales','5 sales','Not checked'].forEach(function(o){
         birOpts += '<option'+(t && t.bir_first5===o ? ' selected' : '')+'>'+o+'</option>';
       });
-      h += '<div class="err" id="mr-err"></div>'
-        + (office ? '<input type="hidden" id="mr-store" value="'+esc(st)+'">' : '')
+      h += (office ? '<input type="hidden" id="mr-store" value="'+esc(st)+'">' : '')
+        + '<div class="fsec first">Cash fund</div>'
         + fld('Cash fund counted — the standard is ₱ '+FUND_STD.toLocaleString(), '<input type="number" inputmode="decimal" id="mr-fund" oninput="fundLive()" value="'+(t?t.fund:'')+'" placeholder="₱">')
         + '<div id="mr-fund-line"></div>'
         + '<div class="frow">'
@@ -789,6 +811,7 @@
         +   personField('mr-received', 'Received by — takes over the fund', t ? t.received_by : '', st)
         + '</div>'
         + quickCountsHtml(st, t)
+        + '<div class="fsec">BIR & columnar book</div>'
         + '<div class="frow">'
         +   fld('OR booklet no.', '<input id="mr-booklet" value="'+v('booklet_no')+'" placeholder="e.g. 12">')
         +   fld('First 5 sales invoices (BIR) — how many so far', '<select id="mr-bir">'+birOpts+'</select>')
@@ -798,10 +821,10 @@
         +   fld('Total sales in the columnar book (₱)', '<input type="number" inputmode="decimal" id="mr-colsales" value="'+v('columnar_sales')+'" placeholder="₱">')
         +   fld('Columnar book date — the date of the last entry', '<input type="date" id="mr-coldate" value="'+v('columnar_date')+'">')
         + '</div>'
-        + '<div class="fl" style="margin:8px 0 2px"><span class="fll"><b style="color:var(--ink)">Hygienics audit</b> — tap one score per area. All 9 or none.</span>'
+        + '<div class="fsec">Hygienics audit</div><div class="fl" style="margin:0 0 2px"><span class="fll">Tap one score per area. All 9 or none.</span>'
         + '<div class="hlegend">5 spotless · 4 small issues · 3 needs cleaning · 2 dirty · 1 health risk</div></div>';
       HYG_AREAS.forEach(function(area, i){
-        h += '<div class="row" style="padding:8px 0;align-items:center"><div style="min-width:0"><b style="font-weight:600;font-size:13.5px">'+esc(area)+'</b>'
+        h += '<div class="row hrow" id="hr-'+i+'"><div><b style="font-weight:600;font-size:15px">'+esc(area)+'</b>'
           + (HYG_GUIDE[i] ? '<ul class="hguide">'+HYG_GUIDE[i].map(function(g){ return '<li>'+esc(g)+'</li>'; }).join('')+'</ul>' : '')
           + '</div><div class="hsegrow">';
         for (var s = 1; s <= 5; s++) h += '<button class="hseg" id="hg-'+i+'-'+s+'" onclick="hygSet('+i+','+s+')">'+s+'</button>';
@@ -809,6 +832,7 @@
       });
       h += '<div id="hyg-line" class="sub" style="margin:4px 0 10px"></div>'
         + fld('Note (optional)', '<input id="mr-note" value="'+v('note')+'" placeholder="Anything the office should know">')
+        + '<div class="err" id="mr-err" role="alert"></div>'
         + '<button class="primary" id="mr-send" onclick="runSubmit()">'+(t?'Update':'Send')+' the morning run</button>'
         + (office ? ' <button class="small" onclick="runCancel()">Cancel</button>' : '');
     }
@@ -850,21 +874,50 @@
       '<div class="row" style="padding:2px 0 8px"><div><b style="font-weight:500">Standard '+peso(FUND_STD)+'</b></div><div>'+fundChip(Number(val))+'</div></div>';
   }
 
+  // v76: a problem is shown twice — above Send, where the finger is, and at the field itself,
+  // which is scrolled into view and outlined. An empty message clears both.
+  function runErr(msg, el){
+    var e = $('mr-err'); if (e) e.textContent = msg || '';
+    Array.prototype.forEach.call(document.querySelectorAll('#runcard .bad'), function(x){ x.classList.remove('bad'); });
+    Array.prototype.forEach.call(document.querySelectorAll('#runcard .ferr'), function(x){ x.parentNode.removeChild(x); });
+    if (!msg || !el) return;
+    el.classList.add('bad');
+    var m = document.createElement('div'); m.className = 'ferr'; m.textContent = msg;
+    (el.closest('.hrow') || el.closest('.fl') || el.parentNode).appendChild(m);
+    el.scrollIntoView({ block:'center' });   // instant: an error should not animate
+    if (el.tagName === 'INPUT' || el.tagName === 'SELECT') setTimeout(function(){ try { el.focus({ preventScroll:true }); } catch(x){} }, 400);
+  }
+  var JUST_SENT = null;
+
   function runSubmit(){
     var fund = $('mr-fund').value;
-    if (fund === ''){ $('mr-err').textContent = 'count the fund first'; return; }
+    runErr('');
+    if (fund === ''){ runErr('Count the cash fund first.', $('mr-fund')); return; }
+    if (!$('mr-bir').value){ runErr('First 5 sales: choose how many so far.', $('mr-bir')); return; }
     var scored = HYGS.filter(function(x){ return x != null; }).length;
     if (scored > 0 && scored < HYG_AREAS.length){
-      $('mr-err').textContent = 'hygienics: score all ' + HYG_AREAS.length + ' areas or clear them';
+      var gap = 0; while (gap < HYGS.length && HYGS[gap] != null) gap++;
+      runErr('Hygienics: score all ' + HYG_AREAS.length + ' areas, or clear them. ' + HYG_AREAS[gap] + ' is missing.', $('hr-' + gap));
       return;
     }
-    var btn = $('mr-send'); if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+    var btn = $('mr-send'), label = btn ? btn.textContent : '';
+    if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+    var sentStore = runStore();
     var p = {action:'run_submit', fund:fund, endorsed_by:personVal('mr-endorsed'), received_by:personVal('mr-received'),
              quick_counts:$('mr-counts') ? $('mr-counts').value.trim() : '', qc: quickCountsVal(runStore()), booklet_no:$('mr-booklet').value.trim(),
              bir_first5:$('mr-bir').value, bir_time:$('mr-btime').value,
              columnar_sales:$('mr-colsales').value.trim(), columnar_date:$('mr-coldate').value, note:$('mr-note').value.trim()};
     if (S.role !== 'branch' && $('mr-store')) p.store = $('mr-store').value;
-    var finish = function(){ RUNOPEN = false; bust('runs_recent'); bust('hyg_recent'); renderRunZone(); };
+    var finish = function(){
+      RUNOPEN = false;
+      if (RUNS && sentStore && !runToday(sentStore))   // show it as sent at once; the refresh below replaces it
+        RUNS.runs.unshift({ day: RUNS.today, store: sentStore, fund: p.fund, endorsed_by: p.endorsed_by, received_by: p.received_by, recorded_by: S.name || S.user });
+      if (S.role !== 'branch'){ JUST_SENT = sentStore; WALK_STORE = null; }
+      bust('runs_recent'); bust('hyg_recent');
+      drawRunZone();
+      if (S.role !== 'branch') window.scrollTo(0, 0);
+      renderRunZone();
+    };
     call(p, function(){
       if (scored === HYG_AREAS.length){
         var hp = {action:'hyg_submit', scores: HYGS, auditor: S.role === 'branch' ? personVal('mr-endorsed') : (S.name || S.user)};
@@ -874,7 +927,7 @@
         finish();
       }
     }, 'mr-err');
-    if (btn) setTimeout(function(){ btn.disabled = false; }, 4000);
+    if (btn) setTimeout(function(){ btn.disabled = false; btn.textContent = label; }, 4000);
   }
 
 
