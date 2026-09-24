@@ -183,6 +183,11 @@
   .frow > .fl{flex:1 1 150px}
   .hguide{margin:3px 0 0; padding-left:16px; font-size:12.5px; line-height:1.4; color:var(--mut)}
   .hlegend{font-size:12.5px; color:var(--mut); margin:2px 0 4px}
+  .qcrow{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:7px 0; border-top:1px solid var(--line2)}
+  .qcn{flex:1 1 140px; min-width:0; font-size:13.5px; font-weight:600}
+  .qch{display:block; font-weight:400; font-size:12px; color:var(--mut)}
+  .qcin{display:flex; gap:6px}
+  .qcin input{width:78px; margin:0; padding:8px}
   .hseg{width:36px; padding:7px 0; font-size:13px; text-align:center}
   .hseg.on{background:var(--accent-strong); border-color:var(--accent-strong); color:#fff}
   .sched-in{display:flex; gap:6px; margin-top:6px; flex-wrap:wrap}
@@ -435,7 +440,7 @@
   // index.html by build.py, so a design change in the OS reaches the app on the next build.
   // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
   var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
-  var APP_VERSION = '20260924-2140';
+  var APP_VERSION = '20260924-2202';
   var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
   var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
 
@@ -683,6 +688,32 @@
     return e.value.trim();
   }
 
+  // Quick counts (v75): one row per morning item of the store — boxes, packs, loose pieces.
+  // Items + today's counts come with runs_recent. No items set up yet → the old free-text line.
+  function quickCountsHtml(st, t){
+    var items = (RUNS && RUNS.items && RUNS.items[st]) || [];
+    if (!items.length) return fld('Quick counts — as on the paper sheet', '<input id="mr-counts" value="'+(t ? esc(t.quick_counts) : '')+'" placeholder="e.g. water 36 · coffee cups 32 · shake cups 138">');
+    var v0 = function(x){ return x === 0 || x === '0' ? '0' : esc(x); };
+    var h = '<div class="fl"><span class="fll"><b style="color:var(--ink)">Quick counts</b> — count what is there now: full boxes, full packs, loose pieces. Leave empty what you did not count.</span>';
+    items.forEach(function(it){
+      var q = (RUNS.qc && RUNS.qc[st+'|'+it.id]) || {};
+      var hint = it.pack_pcs ? ('1 pack = '+it.pack_pcs+' pcs' + (it.box_packs ? ' · 1 box = '+it.box_packs+' packs' : '')) : '';
+      var inp = function(k){ return '<input type="number" inputmode="numeric" min="0" id="qc-'+it.id+'-'+k+'" value="'+v0(q[k])+'" placeholder="'+k+'" aria-label="'+esc(it.item)+' '+k+'">'; };
+      h += '<div class="qcrow"><div class="qcn">'+esc(it.item)+(hint ? '<span class="qch">'+hint+'</span>' : '')+'</div>'
+        + '<div class="qcin">'+inp('boxes')+inp('packs')+inp('loose')+'</div></div>';
+    });
+    return h + '</div>';
+  }
+  function quickCountsVal(st){
+    var out = [];
+    ((RUNS && RUNS.items && RUNS.items[st]) || []).forEach(function(it){
+      var g = function(k){ var e = $('qc-'+it.id+'-'+k); return e ? e.value.trim() : ''; };
+      var b = g('boxes'), k = g('packs'), l = g('loose');
+      if (b !== '' || k !== '' || l !== '') out.push({ id: it.id, boxes: b, packs: k, loose: l });
+    });
+    return out;
+  }
+
   // Which store the run card is about: the tablet's own store, or the one picked on the walk.
   function runStore(){ return S.role === 'branch' ? S.store : WALK_STORE; }
   function runToday(st){
@@ -757,7 +788,7 @@
         +   personField('mr-endorsed', 'Endorsed by — hands over the fund', t ? t.endorsed_by : '', st)
         +   personField('mr-received', 'Received by — takes over the fund', t ? t.received_by : '', st)
         + '</div>'
-        + fld('Quick counts — as on the paper sheet', '<input id="mr-counts" value="'+v('quick_counts')+'" placeholder="e.g. water 36 · coffee cups 32 · shake cups 138">')
+        + quickCountsHtml(st, t)
         + '<div class="frow">'
         +   fld('OR booklet no.', '<input id="mr-booklet" value="'+v('booklet_no')+'" placeholder="e.g. 12">')
         +   fld('First 5 sales invoices (BIR) — how many so far', '<select id="mr-bir">'+birOpts+'</select>')
@@ -829,7 +860,7 @@
     }
     var btn = $('mr-send'); if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
     var p = {action:'run_submit', fund:fund, endorsed_by:personVal('mr-endorsed'), received_by:personVal('mr-received'),
-             quick_counts:$('mr-counts').value.trim(), booklet_no:$('mr-booklet').value.trim(),
+             quick_counts:$('mr-counts') ? $('mr-counts').value.trim() : '', qc: quickCountsVal(runStore()), booklet_no:$('mr-booklet').value.trim(),
              bir_first5:$('mr-bir').value, bir_time:$('mr-btime').value,
              columnar_sales:$('mr-colsales').value.trim(), columnar_date:$('mr-coldate').value, note:$('mr-note').value.trim()};
     if (S.role !== 'branch' && $('mr-store')) p.store = $('mr-store').value;
