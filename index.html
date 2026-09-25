@@ -190,9 +190,11 @@
   .row.hrow > div:first-child{flex:1 1 220px; min-width:0}
   .fsec{font-size:16px; font-weight:700; color:var(--ink); margin:20px 0 10px; padding-top:16px; border-top:1px solid var(--line)}
   .fsec.first{margin-top:6px; padding-top:0; border-top:0}
-  .qcrow.qchead{border-top:0; padding:0 0 2px}
-  .qchd{display:flex; gap:6px}
-  .qchd span{width:78px; text-align:center; font-size:13px; font-weight:600; color:var(--ink2)}
+  .qcu{display:flex; flex-direction:column; align-items:center; gap:2px; font-size:13px; font-weight:600; color:var(--ink2)}
+  .dngrid{display:grid; grid-template-columns:auto 96px 1fr; gap:6px 12px; align-items:center; max-width:400px}
+  .dngrid .dnd{font-size:15px; font-weight:600; text-align:right; white-space:nowrap}
+  .dngrid input{margin:0; padding:8px}
+  .dngrid .dna{text-align:right; font-size:14px; color:var(--ink2); font-variant-numeric:tabular-nums}
   .bad{border-color:var(--crit) !important; box-shadow:0 0 0 3px var(--crit-bg) !important}
   .row.hrow.bad{border-radius:var(--r-sm); outline:2px solid var(--crit); outline-offset:3px; box-shadow:none !important}
   .ferr{flex-basis:100%; color:var(--crit); font-size:14px; font-weight:600; margin:6px 0 0}
@@ -456,7 +458,7 @@
   // index.html by build.py, so a design change in the OS reaches the app on the next build.
   // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
   var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
-  var APP_VERSION = '20260924-2320';
+  var APP_VERSION = '20260925-1745';
   var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
   var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
 
@@ -538,7 +540,7 @@
     var today = (RUNS && RUNS.today) || new Date().toISOString().slice(0,10);
     if (p.action === 'run_submit' && RUNS){
       RUNS.runs = RUNS.runs.filter(function(r){ return !(r.day === today && r.store === p.store); });
-      RUNS.runs.unshift({ id:'queued', day:today, store:p.store, fund:p.fund, endorsed_by:p.endorsed_by, received_by:p.received_by,
+      RUNS.runs.unshift({ id:'queued', day:today, store:p.store, fund:p.fund, fund_breakdown:p.fund_breakdown, endorsed_by:p.endorsed_by, received_by:p.received_by,
         quick_counts:p.quick_counts, booklet_no:p.booklet_no, bir_first5:p.bir_first5, bir_time:p.bir_time,
         columnar_sales:p.columnar_sales, columnar_date:p.columnar_date, note:p.note, recorded_by:S.user, recorded_name:(S.name || S.user) + ' · waiting to send' });
       try { localStorage.setItem('c_' + S.user + '_runs_recent_', JSON.stringify(RUNS)); } catch(e){}
@@ -618,6 +620,7 @@
 
   // ---- morning run (Store Cash Fund sheet, digitized) ----
   var FUND_STD = 10000;
+  var FUND_DENOMS = [1, 5, 10, 20, 50, 100, 200, 500, 1000];   // v79: the paper cash-count sheet, in its order
   var RUNOPEN = false;
   var RUNS = null;
   var WALK_STORES = ['MCC','DC','MCBC','P99','BK'];  // the office round — Mike's five outlets; VAL/SP have their own admin
@@ -706,20 +709,22 @@
     return e.value.trim();
   }
 
-  // Quick counts (v75): one row per morning item of the store — boxes, packs, loose pieces.
+  // Quick counts (v75): one row per morning item of the store. v79: each item asks only for its own
+  // units (drinks "case loose", water "box loose"; blank = box pack loose), each input captioned.
   // Items + today's counts come with runs_recent. No items set up yet → the old free-text line.
+  var QC_KEY = { 'box':'boxes', 'case':'cases', 'pack':'packs', 'loose':'loose' };
   function quickCountsHtml(st, t){
     var items = (RUNS && RUNS.items && RUNS.items[st]) || [];
     if (!items.length) return '<div class="fsec">Quick counts</div>' + fld('As on the paper sheet', '<input id="mr-counts" value="'+(t ? esc(t.quick_counts) : '')+'" placeholder="e.g. water 36 · coffee cups 32 · shake cups 138">');
     var v0 = function(x){ return x === 0 || x === '0' ? '0' : esc(x); };
-    var h = '<div class="fsec">Quick counts</div><div class="fl"><span class="fll">Count what is there now: full boxes, full packs, loose pieces. Leave empty what you did not count.</span>'
-      + '<div class="qcrow qchead"><div class="qcn"></div><div class="qchd" aria-hidden="true"><span>Boxes</span><span>Packs</span><span>Loose</span></div></div>';
+    var h = '<div class="fsec">Quick counts</div><div class="fl"><span class="fll">Count what is there now: full cases or boxes, then loose pieces. Leave empty what you did not count.</span>';
     items.forEach(function(it){
       var q = (RUNS.qc && RUNS.qc[st+'|'+it.id]) || {};
       var hint = it.pack_pcs ? ('1 pack = '+it.pack_pcs+' pcs' + (it.box_packs ? ' · 1 box = '+it.box_packs+' packs' : '')) : '';
-      var inp = function(k){ return '<input type="number" inputmode="numeric" min="0" id="qc-'+it.id+'-'+k+'" value="'+v0(q[k])+'" placeholder="'+k+'" aria-label="'+esc(it.item)+' '+k+'">'; };
+      var inp = function(u){ var k = QC_KEY[u]; if (!k) return '';
+        return '<label class="qcu"><span>'+k+'</span><input type="number" inputmode="numeric" min="0" id="qc-'+it.id+'-'+k+'" value="'+v0(q[k])+'" aria-label="'+esc(it.item)+' '+k+'"></label>'; };
       h += '<div class="qcrow"><div class="qcn">'+esc(it.item)+(hint ? '<span class="qch">'+hint+'</span>' : '')+'</div>'
-        + '<div class="qcin">'+inp('boxes')+inp('packs')+inp('loose')+'</div></div>';
+        + '<div class="qcin">'+(it.units || 'box pack loose').split(' ').map(inp).join('')+'</div></div>';
     });
     return h + '</div>';
   }
@@ -727,8 +732,8 @@
     var out = [];
     ((RUNS && RUNS.items && RUNS.items[st]) || []).forEach(function(it){
       var g = function(k){ var e = $('qc-'+it.id+'-'+k); return e ? e.value.trim() : ''; };
-      var b = g('boxes'), k = g('packs'), l = g('loose');
-      if (b !== '' || k !== '' || l !== '') out.push({ id: it.id, boxes: b, packs: k, loose: l });
+      var b = g('boxes'), k = g('packs'), l = g('loose'), c = g('cases');
+      if (b !== '' || k !== '' || l !== '' || c !== '') out.push({ id: it.id, boxes: b, packs: k, loose: l, cases: c });
     });
     return out;
   }
@@ -780,7 +785,8 @@
     var h = '<div class="card accent" id="runcard"><h2>Morning run'+(office ? ' — '+esc(S.stores[st]||st) : '')+'</h2>';
     if (!RUNOPEN && t){
       h += '<p class="sub">sent for today by '+esc(byName(t))+'</p>'
-        + '<div class="row" style="padding:6px 0"><div><b>Cash fund</b><div class="meta">'+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—')+'</div></div><div>'+fundChip(t.fund)+'</div></div>'
+        + '<div class="row" style="padding:6px 0"><div><b>Cash fund</b><div class="meta">'+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—')+'</div>'
+        + (fundBreakLine(t) ? '<div class="meta">'+fundBreakLine(t)+'</div>' : '')+'</div><div>'+fundChip(t.fund)+'</div></div>'
         + '<div class="row" style="padding:6px 0"><div><b>BIR first 5 sales</b><div class="meta">booklet '+esc(t.booklet_no||'—')+(t.quick_counts?' · '+esc(t.quick_counts):'')+'</div></div><div><span class="chip c-done">'+esc(t.bir_first5||'checked')+(t.bir_time?' · '+esc(t.bir_time):'')+'</span></div></div>';
       if (t.columnar_sales !== '' && t.columnar_sales != null)
         h += '<div class="row" style="padding:6px 0"><div><b>Columnar book</b><div class="meta">'+(t.columnar_date ? 'book date '+esc(fmtD(t.columnar_date)) : '—')+'</div></div><div><span class="chip c-done">sales '+peso(t.columnar_sales)+'</span></div></div>';
@@ -806,7 +812,7 @@
       });
       h += (office ? '<input type="hidden" id="mr-store" value="'+esc(st)+'">' : '')
         + '<div class="fsec first">Cash fund</div>'
-        + fld('Cash fund counted', '<input type="number" inputmode="decimal" id="mr-fund" oninput="fundLive()" value="'+(t?t.fund:'')+'" placeholder="₱">', 'The standard is ₱ '+FUND_STD.toLocaleString())
+        + fld('Count each note and coin', fundGridHtml(t), 'The standard is ₱ '+FUND_STD.toLocaleString())
         + '<div id="mr-fund-line"></div>'
         + '<div class="frow">'
         +   personField('mr-endorsed', 'Endorsed by', t ? t.endorsed_by : '', st, 'Hands over the fund')
@@ -869,11 +875,44 @@
     }
   }
 
+  // v79: the fund is counted note by note, like the paper cash-count sheet. The total is the sum —
+  // never typed — and the breakdown travels with the run ({"1000":12,"500":1,…}).
+  function fundBreak(t){
+    var b = t && t.fund_breakdown;
+    if (!b) return {};
+    if (typeof b === 'object') return b;
+    try { return JSON.parse(b) || {}; } catch(e){ return {}; }
+  }
+  function fundBreakLine(t){
+    var bd = fundBreak(t);
+    return FUND_DENOMS.slice().reverse().filter(function(d){ return bd[d]; })
+      .map(function(d){ return bd[d]+' × '+peso(d); }).join(' · ');
+  }
+  function fundGridHtml(t){
+    var bd = fundBreak(t), h = '<div class="dngrid">';
+    FUND_DENOMS.forEach(function(d){
+      h += '<label class="dnd" for="dn-'+d+'">'+peso(d)+'</label>'
+        + '<input type="number" inputmode="numeric" min="0" step="1" id="dn-'+d+'" value="'+(bd[d] != null ? String(Number(bd[d])) : '')+'" oninput="fundLive()" placeholder="pcs">'
+        + '<span class="dna" id="dna-'+d+'"></span>';
+    });
+    return h + '</div>';
+  }
+  function fundVal(){
+    var f = { bd:{}, sum:0, any:false, bad:null };
+    FUND_DENOMS.forEach(function(d){
+      var e = $('dn-'+d), v = e ? e.value.trim() : '', n = Number(v);
+      var a = $('dna-'+d); if (a) a.textContent = v === '' || isNaN(n) ? '' : peso(d * n);
+      if (v === '') return;
+      if (isNaN(n) || n < 0 || n !== Math.floor(n)){ if (f.bad == null) f.bad = d; return; }
+      f.bd[d] = n; f.sum += d * n; f.any = true;
+    });
+    return f;
+  }
   function fundLive(){
     var box = $('mr-fund-line'); if (!box) return;
-    var val = $('mr-fund').value;
-    box.innerHTML = val === '' ? '' :
-      '<div class="row" style="padding:2px 0 8px"><div><b style="font-weight:500">Standard '+peso(FUND_STD)+'</b></div><div>'+fundChip(Number(val))+'</div></div>';
+    var f = fundVal();
+    box.innerHTML = !f.any ? '' :
+      '<div class="row" style="padding:2px 0 8px"><div><b>Total '+peso(f.sum)+'</b></div><div>'+fundChip(f.sum)+'</div></div>';
   }
 
   // v76: a problem is shown twice — above Send, where the finger is, and at the field itself,
@@ -892,9 +931,10 @@
   var JUST_SENT = null;
 
   function runSubmit(){
-    var fund = $('mr-fund').value;
+    var fv = fundVal();
     runErr('');
-    if (fund === ''){ runErr('Count the cash fund first.', $('mr-fund')); return; }
+    if (fv.bad != null){ runErr('Check the count of '+peso(fv.bad)+': whole pieces only.', $('dn-'+fv.bad)); return; }
+    if (!fv.any){ runErr('Count the cash fund first.', $('dn-'+FUND_DENOMS[0])); return; }
     if (!$('mr-bir').value){ runErr('First 5 sales: choose how many so far.', $('mr-bir')); return; }
     var scored = HYGS.filter(function(x){ return x != null; }).length;
     if (scored > 0 && scored < HYG_AREAS.length){
@@ -905,7 +945,7 @@
     var btn = $('mr-send'), label = btn ? btn.textContent : '';
     if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
     var sentStore = runStore();
-    var p = {action:'run_submit', fund:fund, endorsed_by:personVal('mr-endorsed'), received_by:personVal('mr-received'),
+    var p = {action:'run_submit', fund:fv.sum, fund_breakdown:fv.bd, endorsed_by:personVal('mr-endorsed'), received_by:personVal('mr-received'),
              quick_counts:$('mr-counts') ? $('mr-counts').value.trim() : '', qc: quickCountsVal(runStore()), booklet_no:$('mr-booklet').value.trim(),
              bir_first5:$('mr-bir').value, bir_time:$('mr-btime').value,
              columnar_sales:$('mr-colsales').value.trim(), columnar_date:$('mr-coldate').value, note:$('mr-note').value.trim()};
@@ -913,7 +953,7 @@
     var finish = function(){
       RUNOPEN = false;
       if (RUNS && sentStore && !runToday(sentStore))   // show it as sent at once; the refresh below replaces it
-        RUNS.runs.unshift({ day: RUNS.today, store: sentStore, fund: p.fund, endorsed_by: p.endorsed_by, received_by: p.received_by, recorded_by: S.user, recorded_name: S.name || S.user });
+        RUNS.runs.unshift({ day: RUNS.today, store: sentStore, fund: p.fund, fund_breakdown: p.fund_breakdown, endorsed_by: p.endorsed_by, received_by: p.received_by, recorded_by: S.user, recorded_name: S.name || S.user });
       if (S.role !== 'branch'){ JUST_SENT = sentStore; WALK_STORE = null; }
       bust('runs_recent'); bust('hyg_recent');
       drawRunZone();
