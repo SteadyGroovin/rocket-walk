@@ -195,6 +195,9 @@
   .dngrid .dnd{font-size:15px; font-weight:600; text-align:right; white-space:nowrap}
   .dngrid input{margin:0; padding:8px}
   .dngrid .dna{text-align:right; font-size:14px; color:var(--ink2); font-variant-numeric:tabular-nums}
+  .cashsum{display:grid; grid-template-columns:auto auto 1fr; gap:6px 16px; align-items:center; max-width:400px; margin:4px 0 12px; font-size:15px}
+  .cashsum .cv{text-align:right; font-variant-numeric:tabular-nums}
+  .cashsum .tot{font-weight:700; border-top:1px solid var(--line); padding-top:6px}
   .bad{border-color:var(--crit) !important; box-shadow:0 0 0 3px var(--crit-bg) !important}
   .row.hrow.bad{border-radius:var(--r-sm); outline:2px solid var(--crit); outline-offset:3px; box-shadow:none !important}
   .ferr{flex-basis:100%; color:var(--crit); font-size:14px; font-weight:600; margin:6px 0 0}
@@ -458,7 +461,7 @@
   // index.html by build.py, so a design change in the OS reaches the app on the next build.
   // Talks to the same Apps Script backend over fetch; the `walk` role is enforced server-side.
   var APP_URL = 'https://script.google.com/macros/s/AKfycbwzq8n9_srrfIiu70kh4jZplje2GhXsQ27Pl_1-nynIU93wtbeHR5fOPyrA8cdSyVS6DA/exec';
-  var APP_VERSION = '20260925-1745';
+  var APP_VERSION = '20260928-1146';
   var BRAND = { MCC:'var(--s-mcc)', DC:'var(--s-dc)', MCBC:'var(--s-mcbc)', P99:'var(--s-p99)', BK:'var(--s-bk)', VAL:'var(--s-val)', SP:'var(--s-sp)', DH:'var(--s-dh)' };
   var S = { user:null, pw:null, role:null, store:null, name:null, stores:{} };
 
@@ -540,7 +543,7 @@
     var today = (RUNS && RUNS.today) || new Date().toISOString().slice(0,10);
     if (p.action === 'run_submit' && RUNS){
       RUNS.runs = RUNS.runs.filter(function(r){ return !(r.day === today && r.store === p.store); });
-      RUNS.runs.unshift({ id:'queued', day:today, store:p.store, fund:p.fund, fund_breakdown:p.fund_breakdown, endorsed_by:p.endorsed_by, received_by:p.received_by,
+      RUNS.runs.unshift({ id:'queued', day:today, store:p.store, fund:p.fund, cash_breakdown:p.cash_breakdown, endorsed_by:p.endorsed_by, received_by:p.received_by,
         quick_counts:p.quick_counts, booklet_no:p.booklet_no, bir_first5:p.bir_first5, bir_time:p.bir_time,
         columnar_sales:p.columnar_sales, columnar_date:p.columnar_date, note:p.note, recorded_by:S.user, recorded_name:(S.name || S.user) + ' · waiting to send' });
       try { localStorage.setItem('c_' + S.user + '_runs_recent_', JSON.stringify(RUNS)); } catch(e){}
@@ -619,7 +622,7 @@
   }
 
   // ---- morning run (Store Cash Fund sheet, digitized) ----
-  var FUND_STD = 10000;
+  var FUND_STD = 3000;   // v80: "cash fund, currently 3k" (Stefan, 2026-09-28)
   var FUND_DENOMS = [1, 5, 10, 20, 50, 100, 200, 500, 1000];   // v79: the paper cash-count sheet, in its order
   var RUNOPEN = false;
   var RUNS = null;
@@ -785,8 +788,10 @@
     var h = '<div class="card accent" id="runcard"><h2>Morning run'+(office ? ' — '+esc(S.stores[st]||st) : '')+'</h2>';
     if (!RUNOPEN && t){
       h += '<p class="sub">sent for today by '+esc(byName(t))+'</p>'
-        + '<div class="row" style="padding:6px 0"><div><b>Cash fund</b><div class="meta">'+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—')+'</div>'
-        + (fundBreakLine(t) ? '<div class="meta">'+fundBreakLine(t)+'</div>' : '')+'</div><div>'+fundChip(t.fund)+'</div></div>'
+        + '<div class="row" style="padding:6px 0"><div><b>Cash count</b><div class="meta">'+esc(t.endorsed_by||'—')+' → '+esc(t.received_by||'—')+'</div>'
+        + (fundBreakLine(t) ? '<div class="meta">'+fundBreakLine(t)+'</div>' : '')
+        + (hasSales(t) ? '<div class="meta">total '+peso(t.cash_total)+' − cash fund '+peso(t.fund)+' = sales '+peso(t.cash_sales)+'</div>' : '')
+        + '</div><div>'+fundChip(t.fund)+(hasSales(t) ? ' '+salesChip(t.cash_sales) : '')+'</div></div>'
         + '<div class="row" style="padding:6px 0"><div><b>BIR first 5 sales</b><div class="meta">booklet '+esc(t.booklet_no||'—')+(t.quick_counts?' · '+esc(t.quick_counts):'')+'</div></div><div><span class="chip c-done">'+esc(t.bir_first5||'checked')+(t.bir_time?' · '+esc(t.bir_time):'')+'</span></div></div>';
       if (t.columnar_sales !== '' && t.columnar_sales != null)
         h += '<div class="row" style="padding:6px 0"><div><b>Columnar book</b><div class="meta">'+(t.columnar_date ? 'book date '+esc(fmtD(t.columnar_date)) : '—')+'</div></div><div><span class="chip c-done">sales '+peso(t.columnar_sales)+'</span></div></div>';
@@ -811,8 +816,11 @@
         birOpts += '<option'+(t && t.bir_first5===o ? ' selected' : '')+'>'+o+'</option>';
       });
       h += (office ? '<input type="hidden" id="mr-store" value="'+esc(st)+'">' : '')
-        + '<div class="fsec first">Cash fund</div>'
-        + fld('Count each note and coin', fundGridHtml(t), 'The standard is ₱ '+FUND_STD.toLocaleString())
+        + '<div class="fsec first">Cash count</div>'
+        + fld('Count all the money in the drawer', fundGridHtml(t), 'Yesterday\'s sales and the cash fund together')
+        + '<div class="frow">'
+        +   fld('Cash fund (₱)', '<input type="number" inputmode="decimal" min="0" id="mr-fund" oninput="fundLive()" value="'+(t && t.fund !== '' && t.fund != null ? esc(String(t.fund)) : '')+'" placeholder="₱">', 'The standard is ₱ '+FUND_STD.toLocaleString())
+        + '</div>'
         + '<div id="mr-fund-line"></div>'
         + '<div class="frow">'
         +   personField('mr-endorsed', 'Endorsed by', t ? t.endorsed_by : '', st, 'Hands over the fund')
@@ -875,10 +883,14 @@
     }
   }
 
-  // v79: the fund is counted note by note, like the paper cash-count sheet. The total is the sum —
-  // never typed — and the breakdown travels with the run ({"1000":12,"500":1,…}).
+  // v79/v80: the whole drawer is counted note by note, like the paper cash-count sheet: the grand
+  // total is the sum (never typed), the cash fund is entered, sales = total − fund. The breakdown
+  // travels with the run ({"1000":12,"500":1,…}); the server recomputes total and sales.
+  function hasSales(t){ return t && t.cash_sales !== '' && t.cash_sales != null; }
+  function salesChip(v){ v = Number(v);
+    return v >= 0 ? '<span class="chip c-done">sales '+peso(v)+'</span>' : '<span class="chip c-new">short '+peso(-v)+'</span>'; }
   function fundBreak(t){
-    var b = t && t.fund_breakdown;
+    var b = t && t.cash_breakdown;
     if (!b) return {};
     if (typeof b === 'object') return b;
     try { return JSON.parse(b) || {}; } catch(e){ return {}; }
@@ -910,9 +922,14 @@
   }
   function fundLive(){
     var box = $('mr-fund-line'); if (!box) return;
-    var f = fundVal();
-    box.innerHTML = !f.any ? '' :
-      '<div class="row" style="padding:2px 0 8px"><div><b>Total '+peso(f.sum)+'</b></div><div>'+fundChip(f.sum)+'</div></div>';
+    var f = fundVal(), fe = $('mr-fund'), fv = fe ? fe.value.trim() : '', fund = Number(fv);
+    if (!f.any && fv === ''){ box.innerHTML = ''; return; }
+    var okFund = fv !== '' && !isNaN(fund) && fund >= 0, sales = f.sum - fund;
+    box.innerHTML = '<div class="cashsum">'
+      + '<span>Grand total</span><span class="cv">'+peso(f.sum)+'</span><span></span>'
+      + '<span>Cash fund</span><span class="cv">'+(okFund ? peso(fund) : '—')+'</span><span>'+(okFund ? fundChip(fund) : '')+'</span>'
+      + '<span class="tot">Sales</span><span class="cv tot">'+(okFund && f.any ? (sales >= 0 ? peso(sales) : '<span style="color:var(--crit)">short '+peso(-sales)+'</span>') : '—')+'</span><span class="tot"></span>'
+      + '</div>';
   }
 
   // v76: a problem is shown twice — above Send, where the finger is, and at the field itself,
@@ -931,10 +948,11 @@
   var JUST_SENT = null;
 
   function runSubmit(){
-    var fv = fundVal();
+    var fv = fundVal(), fundIn = $('mr-fund').value.trim();
     runErr('');
     if (fv.bad != null){ runErr('Check the count of '+peso(fv.bad)+': whole pieces only.', $('dn-'+fv.bad)); return; }
-    if (!fv.any){ runErr('Count the cash fund first.', $('dn-'+FUND_DENOMS[0])); return; }
+    if (!fv.any){ runErr('Count the money in the drawer first.', $('dn-'+FUND_DENOMS[0])); return; }
+    if (fundIn === '' || isNaN(Number(fundIn)) || Number(fundIn) < 0){ runErr('Enter the cash fund.', $('mr-fund')); return; }
     if (!$('mr-bir').value){ runErr('First 5 sales: choose how many so far.', $('mr-bir')); return; }
     var scored = HYGS.filter(function(x){ return x != null; }).length;
     if (scored > 0 && scored < HYG_AREAS.length){
@@ -945,7 +963,7 @@
     var btn = $('mr-send'), label = btn ? btn.textContent : '';
     if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
     var sentStore = runStore();
-    var p = {action:'run_submit', fund:fv.sum, fund_breakdown:fv.bd, endorsed_by:personVal('mr-endorsed'), received_by:personVal('mr-received'),
+    var p = {action:'run_submit', fund:Number(fundIn), cash_breakdown:fv.bd, endorsed_by:personVal('mr-endorsed'), received_by:personVal('mr-received'),
              quick_counts:$('mr-counts') ? $('mr-counts').value.trim() : '', qc: quickCountsVal(runStore()), booklet_no:$('mr-booklet').value.trim(),
              bir_first5:$('mr-bir').value, bir_time:$('mr-btime').value,
              columnar_sales:$('mr-colsales').value.trim(), columnar_date:$('mr-coldate').value, note:$('mr-note').value.trim()};
@@ -953,7 +971,7 @@
     var finish = function(){
       RUNOPEN = false;
       if (RUNS && sentStore && !runToday(sentStore))   // show it as sent at once; the refresh below replaces it
-        RUNS.runs.unshift({ day: RUNS.today, store: sentStore, fund: p.fund, fund_breakdown: p.fund_breakdown, endorsed_by: p.endorsed_by, received_by: p.received_by, recorded_by: S.user, recorded_name: S.name || S.user });
+        RUNS.runs.unshift({ day: RUNS.today, store: sentStore, fund: p.fund, cash_breakdown: p.cash_breakdown, cash_total: fv.sum, cash_sales: fv.sum - p.fund, endorsed_by: p.endorsed_by, received_by: p.received_by, recorded_by: S.user, recorded_name: S.name || S.user });
       if (S.role !== 'branch'){ JUST_SENT = sentStore; WALK_STORE = null; }
       bust('runs_recent'); bust('hyg_recent');
       drawRunZone();
