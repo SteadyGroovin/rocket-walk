@@ -1,25 +1,14 @@
-// Store walk — service worker. Caches the app shell so the app opens without signal;
-// never touches the Apps Script calls (POST, other origin), which always go to the network.
-// VERSION is stamped by build.py — a new build = a new cache, old ones are dropped on activate.
-var VERSION = '20260928-1146';
-var CACHE = 'walk-' + VERSION;
-var SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
-
-self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
+// Store walk — retired 2026-11-08. This service worker replaces the old one on the next open:
+// it deletes every cached copy of the old app, takes over the open page, reloads it (so the "moved" page shows)
+// and then unregisters itself. Nothing is cached any more.
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", e => {
+  e.waitUntil((async () => {
+    const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k)));
+    await self.clients.claim();
+    const cs = await self.clients.matchAll({ type: "window" });
+    cs.forEach(c => { try { c.navigate(c.url); } catch (x) {} });
+    await self.registration.unregister();
+  })());
 });
-self.addEventListener('activate', function (e) {
-  e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
-  }).then(function () { return self.clients.claim(); }));
-});
-self.addEventListener('fetch', function (e) {
-  var req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;   // backend + fonts: network
-  e.respondWith(caches.match(req, { ignoreSearch: true }).then(function (hit) {
-    return hit || fetch(req).then(function (res) {
-      if (res && res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
-      return res;
-    });
-  }));
-});
+self.addEventListener("fetch", () => {});   // network only

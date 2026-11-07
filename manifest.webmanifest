@@ -1,7 +1,7 @@
 {
-  "name": "Rocket OS — Store walk",
+  "name": "Store walk (moved to Rocket OS)",
   "short_name": "Store walk",
-  "description": "The morning round: cash fund, quick counts, BIR check, columnar book and hygienics, store by store.",
+  "description": "Retired 8 Nov 2026. The morning run is in Rocket OS.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -9,8 +9,23 @@
   "background_color": "#F1F4F2",
   "theme_color": "#0E3B29",
   "icons": [
-    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
